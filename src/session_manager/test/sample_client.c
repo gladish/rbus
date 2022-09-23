@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "rbus_core.h"
+#include "rbuscore.h"
 
 #include "rbus_session_mgr.h"
 #include "rtLog.h"
@@ -30,12 +30,12 @@ static int g_current_session_id = 0;
 void create_session()
 {
     rbusMessage response;
-    if(RTMESSAGE_BUS_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_REQUEST_SESSION_ID, NULL, 1000, &response))
+    if(RBUSCORE_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_REQUEST_SESSION_ID, NULL, 1000, &response))
     {
         int result;
         if(RT_OK == rbusMessage_GetInt32(response, &result))
         {
-            if(RTMESSAGE_BUS_SUCCESS != result)
+            if(RBUSCORE_SUCCESS != result)
             {
                 printf("Session manager reports internal error %d.\n", result);
                 return;
@@ -55,12 +55,12 @@ void create_session()
 void print_current_session_id()
 {
     rbusMessage response;
-    if(RTMESSAGE_BUS_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_GET_CURRENT_SESSION_ID, NULL, 1000, &response))
+    if(RBUSCORE_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_GET_CURRENT_SESSION_ID, NULL, 1000, &response))
     {
         int result;
         if(RT_OK == rbusMessage_GetInt32(response, &result))
         {
-            if(RTMESSAGE_BUS_SUCCESS != result)
+            if(RBUSCORE_SUCCESS != result)
             {
                 printf("Session manager reports internal error %d.\n", result);
                 return;
@@ -84,12 +84,12 @@ void end_session(int session)
 
     rbusMessage_Init(&out);
     rbusMessage_SetInt32(out, session);
-    if(RTMESSAGE_BUS_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_END_SESSION, out, 1000, &response))
+    if(RBUSCORE_SUCCESS == rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_END_SESSION, out, 1000, &response))
     {
         int result;
         if(RT_OK == rbusMessage_GetInt32(response, &result))
         {
-            if(RTMESSAGE_BUS_SUCCESS != result)
+            if(RBUSCORE_SUCCESS != result)
             {
                 printf("Session manager reports internal error %d.\n", result);
                 return;
@@ -106,10 +106,10 @@ int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection("rbus_smgr_client")) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection("rbus_smgr_client")) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     end_session(g_current_session_id);
     
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

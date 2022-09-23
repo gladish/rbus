@@ -46,11 +46,11 @@ static int event_callback(const char * object_name,  const char * event_name, rb
 int main(int argc, char *argv[])
 {
     (void) argc;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: sample_client <name of client instance> <destination object name>\n");
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection(argv[1])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(argv[1])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 #if 1
     /*Pull the object from remote end.*/
     rbusMessage response;
-    if((err = rbus_pullObj(OBJ1_NAME, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(OBJ1_NAME, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", OBJ1_NAME);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     //Check whether aliases work.
 
-    if((err = rbus_pullObj("obj1_alias", 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj("obj1_alias", 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", "obj1_alias");
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     {
         printf("Could not pull object %s\n", OBJ1_NAME);
     }
-    if((err = rbus_pullObj("obj1_alias2", 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj("obj1_alias2", 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", "obj1_alias2");
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         printf("Could not pull object %s\n", OBJ1_NAME);
     }
     
-    if((err = rbus_pullObj(OBJ2_NAME, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(OBJ2_NAME, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", OBJ2_NAME);
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     rbusMessage setter;
     rbusMessage_Init(&setter);
     rbusMessage_SetString(setter, "foobar");
-    if((err = rbus_pushObj(OBJ1_NAME, setter, 1000)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pushObj(OBJ1_NAME, setter, 1000)) == RBUSCORE_SUCCESS)
     {
         printf("Push object %s\n", OBJ1_NAME);
     }
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     }
 
     /* Pull again to make sure that "set" worked. */
-    if((err = rbus_pullObj(OBJ1_NAME, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(OBJ1_NAME, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", OBJ1_NAME);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         printf("Could not pull object %s\n", OBJ1_NAME);
     }
 #endif
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

@@ -20,11 +20,11 @@ static char data1[100] = "alpha init init init";
 int main(int argc, char *argv[])
 {
     (void) argc;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: sample_server <server object name>\n");
 
     reset_stored_data();
-    if((err = rbus_openBrokerConnection(argv[1])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(argv[1])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     snprintf(buffer, (sizeof(buffer) - 1), "%s.obj1", argv[1]);
     printf("Registering object %s\n", buffer);
 
-    if((err = rbus_registerObj(buffer, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(buffer, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object %s \n", buffer);
     }
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

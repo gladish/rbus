@@ -16,23 +16,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-include_directories(
-	../..
-    ../include
-    .)
+include_directories(.
+                    ../core
+	            ../rtmessage)
 
 add_executable(rbus_session_mgr session_manager.c)
-add_dependencies(rbus_session_mgr rbus-core)
-target_link_libraries(rbus_session_mgr rbus-core)
+add_dependencies(rbus_session_mgr rbuscore)
+target_link_libraries(rbus_session_mgr rbuscore)
 
-if (BUILD_RBUS_SAMPLE_APPS)
+if (BUILD_SESSIONMGR_SAMPLE_APPS)
 add_executable(rbus_session_mgr_client test/sample_client.c)
-add_dependencies(rbus_session_mgr_client rbus-core)
-target_link_libraries(rbus_session_mgr_client rbus-core)
-endif (BUILD_RBUS_SAMPLE_APPS)
+add_dependencies(rbus_session_mgr_client rbuscore)
+target_link_libraries(rbus_session_mgr_client rbuscore)
+endif (BUILD_SESSIONMGR_SAMPLE_APPS)
 
 install (TARGETS rbus_session_mgr 
         RUNTIME DESTINATION bin)
-install(FILES rbus_session_mgr.h DESTINATION "include/rbus-core")
 
 

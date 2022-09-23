@@ -513,7 +513,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
 
   rbusMessage_Init(response);
 
-  rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+  rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
   rbusMessage_SetInt32(*response, 1);
   if(RBUS_GTEST_GET24 != *test)
     rbusMessage_SetString(*response, destination);
@@ -581,7 +581,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
 
 int rbuscoreProvider(rbusGtest_t test, pid_t pid, int *consumer_status)
 {
-  rbus_error_t err = RTMESSAGE_BUS_ERROR_GENERAL;
+  rbuscoreError_t err = RBUSCORE_ERROR_GENERAL;
   int rc = RBUS_ERROR_BUS_ERROR, wait_ret = -1;
   const char *object_name = NULL;
   rbus_method_table_entry_t table[1] = {{METHOD_GETPARAMETERVALUES, &test, handle_get}};
@@ -604,16 +604,16 @@ int rbuscoreProvider(rbusGtest_t test, pid_t pid, int *consumer_status)
   }
 
   err = rbus_openBrokerConnection(object_name);
-  EXPECT_EQ(err,RTMESSAGE_BUS_SUCCESS);
-  if(RTMESSAGE_BUS_SUCCESS != err) goto exit1;
+  EXPECT_EQ(err,RBUSCORE_SUCCESS);
+  if(RBUSCORE_SUCCESS != err) goto exit1;
 
   err = rbus_registerObj(object_name, handle_get, NULL);
-  EXPECT_EQ(err,RTMESSAGE_BUS_SUCCESS);
-  if(RTMESSAGE_BUS_SUCCESS != err) goto exit2;
+  EXPECT_EQ(err,RBUSCORE_SUCCESS);
+  if(RBUSCORE_SUCCESS != err) goto exit2;
 
   err = rbus_registerMethodTable(object_name, table, 1);
-  EXPECT_EQ(err,RTMESSAGE_BUS_SUCCESS);
-  if(RTMESSAGE_BUS_SUCCESS != err) goto exit2;
+  EXPECT_EQ(err,RBUSCORE_SUCCESS);
+  if(RBUSCORE_SUCCESS != err) goto exit2;
 
   wait_ret = waitpid(pid, consumer_status, 0);
   EXPECT_EQ(wait_ret,pid);
@@ -623,8 +623,8 @@ int rbuscoreProvider(rbusGtest_t test, pid_t pid, int *consumer_status)
 
 exit2:
   err = rbus_closeBrokerConnection();
-  EXPECT_EQ(err,RTMESSAGE_BUS_SUCCESS);
-  rc |= (RTMESSAGE_BUS_SUCCESS == err) ? RBUS_ERROR_SUCCESS : RBUS_ERROR_BUS_ERROR;
+  EXPECT_EQ(err,RBUSCORE_SUCCESS);
+  rc |= (RBUSCORE_SUCCESS == err) ? RBUS_ERROR_SUCCESS : RBUS_ERROR_BUS_ERROR;
 
 exit1:
   printf("%s: exit\n",__func__);

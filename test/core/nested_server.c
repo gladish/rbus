@@ -34,14 +34,14 @@ static int handle_get(const char * destination, const char * method, rbusMessage
     (void) hdr;
     printf("Handling %s call for %s\n", method, destination);
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     rbusMessage_SetString(*response, data);
 
     if(0 == strncmp(object_name, destination, strlen(object_name)))
     {
         /* Make the nested call */
         rbusMessage nestedResponse;
-        if(RTMESSAGE_BUS_SUCCESS != rbus_invokeRemoteMethod(nested_object_name, METHOD_GETPARAMETERVALUES,
+        if(RBUSCORE_SUCCESS != rbus_invokeRemoteMethod(nested_object_name, METHOD_GETPARAMETERVALUES,
                     NULL, 1000, &nestedResponse))
         {
             printf("Nested call failed.\n");
@@ -64,7 +64,7 @@ static void handle_unknown(const char * destination, const char * method, rbusMe
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+    rbusMessage_SetInt32(*response, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
 }
 
 static int callback(const char * destination, const char * method, rbusMessage message, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -88,7 +88,7 @@ static int callback(const char * destination, const char * method, rbusMessage m
 
 int main(int argc, char *argv[])
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: rbus_nested_test_server <top level object> <nested object>\n");
     if(3 > argc)
         return 1;
@@ -97,17 +97,17 @@ int main(int argc, char *argv[])
 
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection(argv[1])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(argv[1])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
 
-    if((err = rbus_registerObj(object_name, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(object_name, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
 
-    if((err = rbus_registerObj(nested_object_name, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(nested_object_name, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
     rbus_registerMethodTable(nested_object_name, table, 1); 
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

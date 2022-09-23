@@ -62,7 +62,7 @@ static int handle_get(const char * destination, const char * method, rtMessage m
     (void) message;
     rtMessage_Create(response);
     //printf("calling get %s\n", destination);
-    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RTMESSAGE_BUS_SUCCESS);
+    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RBUSCORE_SUCCESS);
     rbus_SetInt32(*response, MESSAGE_FIELD_PAYLOAD, REFERENCE_VALUE);
     return 0;
 }
@@ -124,7 +124,7 @@ static int load_datamodel_from_file(const char * filename)
 
 static void test_bus(int reps)
 {
-    rbus_error_t err;
+    rbusCoreError_t err;
     pid_t pid = -1;
     rbus_method_table_entry_t table[1] = {{METHOD_GETPARAMETERVALUES, NULL, handle_get}};
     for(const auto &c_ptr : ref_table)
@@ -132,10 +132,10 @@ static void test_bus(int reps)
         pid = fork();
         if(0 == pid)
         {
-            if((err = rbus_openBrokerConnection("loadserver")) == RTMESSAGE_BUS_SUCCESS)
+            if((err = rbus_openBrokerConnection("loadserver")) == RBUSCORE_SUCCESS)
                 printf("Successfully connected to bus.\n");
             
-            if((err = rbus_registerObj(c_ptr->component_name.c_str(), callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+            if((err = rbus_registerObj(c_ptr->component_name.c_str(), callback, NULL)) == RBUSCORE_SUCCESS)
                 printf("Successfully registered component %s.\n",c_ptr->component_name.c_str()); 
             
             rbus_registerMethodTable(c_ptr->component_name.c_str(), table, 1);
@@ -143,7 +143,7 @@ static void test_bus(int reps)
                 rbus_addElement(c_ptr->component_name.c_str(), leaf.c_str());
             
             pause();
-            if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+            if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
                 printf("Successfully disconnected from bus.\n");
             break;
         }
@@ -156,7 +156,7 @@ static void test_bus(int reps)
         printf("Server applications are ready. Press enter to start testing.\n");
         getchar();
         //Test the registered datamodels from the launcher application.
-        if((err = rbus_openBrokerConnection("loadclient")) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_openBrokerConnection("loadclient")) == RBUSCORE_SUCCESS)
             printf("Successfully connected to bus.\n");
         gettimeofday(&start_time, NULL);
         while(0 < reps--)
@@ -167,7 +167,7 @@ static void test_bus(int reps)
                 int value = 0;
                 int op_result = 0;
                 err = rbus_invokeRemoteMethod(c_ptr->component_name.c_str(), METHOD_GETPARAMETERVALUES, NULL, 1000, &result);
-                if((RTMESSAGE_BUS_SUCCESS != err) ||
+                if((RBUSCORE_SUCCESS != err) ||
                         (RT_OK != rbus_GetInt32(result, MESSAGE_FIELD_RESULT, &op_result)) ||
                         (RT_OK != rbus_GetInt32(result, MESSAGE_FIELD_PAYLOAD, &value)) || 
                         (value != REFERENCE_VALUE))
@@ -178,7 +178,7 @@ static void test_bus(int reps)
                 {
                     value = 0;
                     err = rbus_invokeRemoteMethod(leaf.c_str(), METHOD_GETPARAMETERVALUES, NULL, 1000, &result);
-                    if((RTMESSAGE_BUS_SUCCESS != err) ||
+                    if((RBUSCORE_SUCCESS != err) ||
                         (RT_OK != rbus_GetInt32(result, MESSAGE_FIELD_RESULT, &op_result)) ||
                         (RT_OK != rbus_GetInt32(result, MESSAGE_FIELD_PAYLOAD, &value)) || 
                         (value != REFERENCE_VALUE))
@@ -192,7 +192,7 @@ static void test_bus(int reps)
         timersub(&end_time, &start_time, &diff);
         long long now = (diff.tv_sec * 1000000ll + diff.tv_usec);
         printf("Time consumed for test is %llu us\n", now);
-        if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
             printf("Successfully disconnected from bus.\n");
 
     }

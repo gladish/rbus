@@ -20,7 +20,7 @@
 #ifndef RBUS_ASYNCSUBSCRIBE_H
 #define RBUS_ASYNCSUBSCRIBE_H
 
-#include <rbus_core.h>
+#include <rbuscore.h>
 #include "rbus.h"
 
 #ifdef __cplusplus

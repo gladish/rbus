@@ -1,7 +1,6 @@
 #define _GNU_SOURCE 1
 #include "rbus_asyncsubscribe.h"
 #include "rbus_config.h"
-#include <rbus_core.h>
 #include "rbus_log.h"
 #include <rtTime.h>
 #include <rtList.h>
@@ -157,7 +156,7 @@ static void rbusAsyncSubscribeRetrier_SendSubscriptionRequests()
 
         if(rtTime_Compare(&item->nextRetryTime, &now) <= 0)
         {
-            rbus_error_t coreerr;
+            rbusCoreError_t coreerr;
             int elapsed;
             int providerError;
 
@@ -170,7 +169,7 @@ static void rbusAsyncSubscribeRetrier_SendSubscriptionRequests()
 
             elapsed = rtTime_Elapsed(&item->startTime, &now);
 
-            if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE &&  /*the only error that means provider not found yet*/
+            if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE &&  /*the only error that means provider not found yet*/
              elapsed < rbusConfig_Get()->subscribeTimeout)    /*if we haven't timeout out yet*/
             {
                 if(item->nextWaitTime == 0)
@@ -205,14 +204,14 @@ static void rbusAsyncSubscribeRetrier_SendSubscriptionRequests()
                 rbusError_t responseErr;
                 rtListItem tmp;
 
-                if(coreerr == RTMESSAGE_BUS_SUCCESS)
+                if(coreerr == RBUSCORE_SUCCESS)
                 {
                     RBUSLOG_INFO("%s: %s subscribe retries succeeded", __FUNCTION__, item->subscription->eventName);
                     responseErr = RBUS_ERROR_SUCCESS;
                 }
                 else
                 {
-                    if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE)
+                    if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE)
                     {
                         RBUSLOG_INFO("%s: %s all subscribe retries failed and no provider found", __FUNCTION__, item->subscription->eventName);
                         RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_NO_PROVIDER_COMPONENT  %s", item->subscription->eventName);/*RDKB-33658-AC7*/

@@ -31,7 +31,7 @@
 #include <rtMemory.h>
 #include <linenoise.h>
 #include <stdarg.h>
-#include <rbus_core.h>
+#include <rbuscore.h>
 #include <signal.h>
 #include <fcntl.h>
 #if (__linux__ && __GLIBC__ && !__UCLIBC__) || __APPLE__
@@ -809,7 +809,7 @@ static bool verify_rbus_open()
 }
 void execute_discover_registered_components_cmd(int argc, char* argv[])
 {
-    rbus_error_t rc = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t rc = RBUSCORE_SUCCESS;
     int componentCnt = 0;
     char **pComponentNames;
 
@@ -821,7 +821,7 @@ void execute_discover_registered_components_cmd(int argc, char* argv[])
 
     runSteps = __LINE__;
     rc = rbus_discoverRegisteredComponents(&componentCnt, &pComponentNames);
-    if(RTMESSAGE_BUS_SUCCESS == rc)
+    if(RBUSCORE_SUCCESS == rc)
     {
         int i;
         printf ("Discovered registered components..\n\r");
@@ -928,7 +928,7 @@ void execute_discover_elements_cmd(int argc, char *argv[])
 
 void execute_discover_wildcard_dests_cmd(int argc, char* argv[])
 {
-    rbus_error_t rc = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t rc = RBUSCORE_SUCCESS;
     int numDestinations = 0;
     char** destinations;
 
@@ -947,7 +947,7 @@ void execute_discover_wildcard_dests_cmd(int argc, char* argv[])
     runSteps = __LINE__;
     rc = rbus_discoverWildcardDestinations(argv[2], &numDestinations, &destinations);
     
-    if(RTMESSAGE_BUS_SUCCESS == rc)
+    if(RBUSCORE_SUCCESS == rc)
     {
         if (numDestinations)
         {

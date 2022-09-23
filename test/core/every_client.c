@@ -36,24 +36,24 @@ static void dumpMessage(rbusMessage message)
 int main(int argc, char *argv[])
 {
     (void) argc;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: sample_client <object to gett>\n");
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection("everyclient")) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection("everyclient")) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
 
     rbusMessage response;
-    if(RTMESSAGE_BUS_SUCCESS == rbus_invokeRemoteMethod(argv[1], METHOD_GETPARAMETERVALUES, NULL, 10000, &response))
+    if(RBUSCORE_SUCCESS == rbus_invokeRemoteMethod(argv[1], METHOD_GETPARAMETERVALUES, NULL, 10000, &response))
     {
         dumpMessage(response);
         rbusMessage_Release(response);
     }
     else
         printf("RPC failed.\n");
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

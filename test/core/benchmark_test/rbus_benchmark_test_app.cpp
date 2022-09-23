@@ -32,9 +32,9 @@ extern "C" {
 bool CALL_RBUS_OPEN_BROKER_CONNECTION(char* component_name)
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
-    if((err = rbus_openBrokerConnection(component_name)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(component_name)) == RBUSCORE_SUCCESS)
     {
          result = true;
     }
@@ -48,8 +48,8 @@ bool CALL_RBUS_OPEN_BROKER_CONNECTION(char* component_name)
 bool CALL_RBUS_CLOSE_BROKER_CONNECTION()
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         result = true;
     }
@@ -71,7 +71,7 @@ void CREATE_RBUS_SERVER_INSTANCE(int handle)
 {
     char server_name[MAX_SERVER_NAME] = "test_server_";
     char buffer[DEFAULT_RESULT_BUFFERSIZE];
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     bool conn_status = false;
 
     memset( buffer, 0, DEFAULT_RESULT_BUFFERSIZE );
@@ -93,7 +93,7 @@ void CREATE_RBUS_SERVER_INSTANCE(int handle)
     //printf("Registering object %s\n", buffer);
 
     err = rbus_registerObj(buffer, callback, NULL);
-    if(RTMESSAGE_BUS_SUCCESS != err)
+    if(RBUSCORE_SUCCESS != err)
     {
        printf("rbus_registerObj failed!!");
     }
@@ -101,7 +101,7 @@ void CREATE_RBUS_SERVER_INSTANCE(int handle)
     rbus_method_table_entry_t table[2] = {{METHOD_SETPARAMETERVALUES, NULL, handle_set1}, {METHOD_GETPARAMETERVALUES, NULL, handle_get1}};
 
     err = rbus_registerMethodTable(buffer, table, 2);
-    if(RTMESSAGE_BUS_SUCCESS != err)
+    if(RBUSCORE_SUCCESS != err)
     {
        printf("rbus_registerMethodTable failed!!");
     }
@@ -112,20 +112,20 @@ void CREATE_RBUS_SERVER_INSTANCE(int handle)
 }
 
 static void BM_OpenBrokerConnection(benchmark::State& state) {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     char component_name[] = "component_1";
 
     for (auto _ : state)
     {
         err = rbus_openBrokerConnection(component_name);
     }
-    if(RTMESSAGE_BUS_SUCCESS == err)
+    if(RBUSCORE_SUCCESS == err)
         CALL_RBUS_CLOSE_BROKER_CONNECTION();
 }
 BENCHMARK(BM_OpenBrokerConnection)->Iterations(1);
 
 static void BM_CloseBrokerConnection(benchmark::State& state) {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     char component_name[] = "component_1";
 
     CALL_RBUS_OPEN_BROKER_CONNECTION(component_name);
@@ -134,13 +134,13 @@ static void BM_CloseBrokerConnection(benchmark::State& state) {
     {
         err = rbus_closeBrokerConnection();
     }
-    if(RTMESSAGE_BUS_SUCCESS != err)
+    if(RBUSCORE_SUCCESS != err)
         printf("rbus_closeBrokerConnection failed!!");
 }
 BENCHMARK(BM_CloseBrokerConnection)->Iterations(1);
 
 static void BM_RegisterObj(benchmark::State& state) {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     char component_name[MAX_SERVER_NAME] = "component_";
     int handle = 1;
     char buffer[DEFAULT_RESULT_BUFFERSIZE];
@@ -156,7 +156,7 @@ static void BM_RegisterObj(benchmark::State& state) {
     {
         err = rbus_registerObj(buffer, callback, NULL);
     }
-    if(RTMESSAGE_BUS_SUCCESS != err)
+    if(RBUSCORE_SUCCESS != err)
         printf("rbus_registerObj failed!!");
 
     CALL_RBUS_CLOSE_BROKER_CONNECTION();
@@ -192,7 +192,7 @@ BENCHMARK(BM_CreateServer)->Iterations(1);
 
 static void BM_PushObject(benchmark::State& state) {
     int counter = 2;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     pid_t pid = fork();
 
@@ -220,7 +220,7 @@ static void BM_PushObject(benchmark::State& state) {
             err = rbus_pushObj(server_obj, setter, 1000);
         }
 
-        if(RTMESSAGE_BUS_SUCCESS != err)
+        if(RBUSCORE_SUCCESS != err)
             printf("rbus_pushObj failed!!");
 
         if(conn_status)
@@ -237,7 +237,7 @@ BENCHMARK(BM_PushObject)->Iterations(1);
 
 static void BM_PullObject(benchmark::State& state) {
     int counter = 2;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     pid_t pid = fork();
 
@@ -262,7 +262,7 @@ static void BM_PullObject(benchmark::State& state) {
         rbusMessage_Init(&setter);
         rbusMessage_SetString(setter, test_string);
         err = rbus_pushObj(server_obj, setter, 1000);
-        if(RTMESSAGE_BUS_SUCCESS != err)
+        if(RBUSCORE_SUCCESS != err)
             printf("rbus_pushObj failed!!");
 
         for (auto _ : state)
@@ -270,7 +270,7 @@ static void BM_PullObject(benchmark::State& state) {
             err = rbus_pullObj(server_obj, 1000, &response);
         }
 
-        if(err == RTMESSAGE_BUS_SUCCESS)
+        if(err == RBUSCORE_SUCCESS)
         {
             const char* buff = NULL;
             rbusMessage_GetString(response, &buff);
@@ -305,7 +305,7 @@ BENCHMARK(BM_PullObject)->Iterations(1);
 
 static void BM_InvokeRemoteMethodSet (benchmark::State& state) {
     int counter = 2;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     pid_t pid = fork();
 
@@ -339,7 +339,7 @@ static void BM_InvokeRemoteMethodSet (benchmark::State& state) {
             response = NULL;
         }
 
-        if(RTMESSAGE_BUS_SUCCESS != err)
+        if(RBUSCORE_SUCCESS != err)
             printf("rbus_invokeRemoteMethod failed!!");
 
         if(conn_status)
@@ -356,7 +356,7 @@ BENCHMARK(BM_InvokeRemoteMethodSet)->Iterations(1);
 
 static void BM_InvokeRemoteMethodGet (benchmark::State& state) {
     int counter = 2;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     pid_t pid = fork();
 
@@ -381,7 +381,7 @@ static void BM_InvokeRemoteMethodGet (benchmark::State& state) {
         rbusMessage_Init(&setter);
         rbusMessage_SetString(setter, test_string);
         err = rbus_invokeRemoteMethod(server_obj, METHOD_SETPARAMETERVALUES, setter, 1000, &response);
-        if(RTMESSAGE_BUS_SUCCESS != err)
+        if(RBUSCORE_SUCCESS != err)
             printf("rbus_invokeRemoteMethod failed!!");
 
         if(NULL != response)
@@ -395,7 +395,7 @@ static void BM_InvokeRemoteMethodGet (benchmark::State& state) {
             err = rbus_invokeRemoteMethod(server_obj, METHOD_GETPARAMETERVALUES, NULL,  1000, &response);
         }
 
-        if(err == RTMESSAGE_BUS_SUCCESS)
+        if(err == RBUSCORE_SUCCESS)
         {
             const char* buff = NULL;
             rbusMessage_GetString(response, &buff);

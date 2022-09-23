@@ -60,7 +60,7 @@ int handle_get1(const char * destination, const char * method, rbusMessage reque
     (void) hdr;
     rbusMessage_Init(response);
     rbusMessage_SetString(*response, data);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -78,7 +78,7 @@ int handle_set1(const char * destination, const char * method, rbusMessage reque
         strncpy(data, payload, sizeof(data));
     }
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 int handle_get2(const char * destination, const char * method, rbusMessage request, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -90,7 +90,7 @@ int handle_get2(const char * destination, const char * method, rbusMessage reque
     (void) hdr;
     rbusMessage_Init(response);
     rbusMessage_SetString(*response, data);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -108,7 +108,7 @@ int handle_set2(const char * destination, const char * method, rbusMessage reque
         strncpy(data, payload, sizeof(data));
     }
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -126,7 +126,7 @@ int handle_getStudentInfo(const char * destination, const char * method, rbusMes
        if(0 == strncmp(student_data[i].object_name, (char *)user_data, 50))
           rbusMessage_SetString(*response, student_data[i].student_name);
     }
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
 
     return 0;
 }
@@ -151,7 +151,7 @@ int handle_setStudentInfo(const char * destination, const char * method, rbusMes
     }
     count++;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -164,7 +164,7 @@ int handle_getBinaryData(const char * destination, const char * method, rbusMess
     (void) hdr;
     rbusMessage_Init(response);
     rbusMessage_SetBytes(*response, (uint8_t *)&test_array1, sizeof(test_array1));
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -183,7 +183,7 @@ int handle_setBinaryData(const char * destination, const char * method, rbusMess
         test_array1 = *payload;
     }
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -198,7 +198,7 @@ int handle_getAttributes1(const char * destination, const char * method, rbusMes
     rbusMessage_SetString(*response, data);
     rbusMessage_SetString(*response, test_struct1.name);
     rbusMessage_SetInt32(*response, test_struct1.age);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 int handle_setAttributes1(const char * destination, const char * method, rbusMessage request, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -217,7 +217,7 @@ int handle_setAttributes1(const char * destination, const char * method, rbusMes
         //printf("Value set to name: %s \n", name);
     }
     rbusMessage_GetInt32(request, &test_struct1.age);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -232,7 +232,7 @@ int handle_getAttributes2(const char * destination, const char * method, rbusMes
     rbusMessage_SetString(*response, data);
     rbusMessage_SetString(*response, test_struct2.name);
     rbusMessage_SetInt32(*response, test_struct2.age);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 int handle_setAttributes2(const char * destination, const char * method, rbusMessage request, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -251,7 +251,7 @@ int handle_setAttributes2(const char * destination, const char * method, rbusMes
         //printf("Value set to name: %s \n", name);
     }
     rbusMessage_GetInt32(request, &test_struct2.age);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -262,7 +262,7 @@ void handle_unknown(const char * destination, const char * method, rbusMessage r
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+    rbusMessage_SetInt32(*response, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
 }
 
 int callback(const char * destination, const char * method, rbusMessage message, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)

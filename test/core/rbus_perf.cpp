@@ -129,7 +129,7 @@ static int handle_get(const char * destination, const char * method, rtMessage m
 
     clock_gettime(CLOCK_TYPE, &g_handler_start[index]);
     rtMessage_Create(response);
-    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RTMESSAGE_BUS_SUCCESS);
+    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RBUSCORE_SUCCESS);
     rbus_SetString(*response, MESSAGE_FIELD_PAYLOAD, g_data);
     clock_gettime(CLOCK_TYPE, &g_handler_end[index]);
 
@@ -149,7 +149,7 @@ static void handle_unknown(const char * destination, const char * method, rtMess
     (void) destination;
     (void) method;
     rtMessage_Create(response);
-    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+    rbus_SetInt32(*response, MESSAGE_FIELD_RESULT, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
 }
 
 static int callback(const char * destination, const char * method, rtMessage message, void * user_data, rtMessage *response)
@@ -179,7 +179,7 @@ static const int MIN_SEPARATION = 0;
 
 static void run_test(int reps, int separation)
 {
-    rbus_error_t err;
+    rbusCoreError_t err;
     for(int i = 0; i < reps; i++)
     {
         rtMessage result;
@@ -189,7 +189,7 @@ static void run_test(int reps, int separation)
         err = rbus_invokeRemoteMethod(OBJECT_NAME, METHOD_GETPARAMETERVALUES, NULL, 1000, &result);
         clock_gettime(CLOCK_TYPE, &g_rpc_end[index]);
 
-        if(RTMESSAGE_BUS_SUCCESS != err)
+        if(RBUSCORE_SUCCESS != err)
         {
             printf("RPC failed after %d runs.\n", i);
             break;
@@ -204,7 +204,7 @@ static void run_test(int reps, int separation)
 
 int main(int argc, char *argv[])
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: rbus_perf <server|client|hybrid> <size of data per transaction> <number of reps> <separation between transactions in milliseconds> <taint|clear> <broker_address>\n");
     if(6 > argc)
         return 1;
@@ -258,14 +258,14 @@ int main(int argc, char *argv[])
     else
         printf("Separation is %ld ms\n", separation);
 
-    if((err = rbus_openBrokerConnection2(APPLICATION_NAME, argv[6])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection2(APPLICATION_NAME, argv[6])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
 
     if((HYBRID == g_mode) || (SERVER == g_mode))
     {
-        if((err = rbus_registerObj(OBJECT_NAME, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_registerObj(OBJECT_NAME, callback, NULL)) == RBUSCORE_SUCCESS)
         {
             printf("Successfully registered object.\n");
         }
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
     if((HYBRID == g_mode) || (SERVER == g_mode))
         delete [] g_data;
     
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

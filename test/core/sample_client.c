@@ -28,11 +28,11 @@ static char buffer[100];
 int main(int argc, char *argv[])
 {
     (void) argc;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: sample_client <name of client instance> <destination object name>\n");
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection(argv[1])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(argv[1])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     snprintf(buffer, (sizeof(buffer) - 1), "%s.obj1", argv[1]);
     /*Pull the object from remote end.*/
     rbusMessage response;
-    if((err = rbus_pullObj(argv[2], 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(argv[2], 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", argv[2]);
@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
     rbusMessage setter;
     rbusMessage_Init(&setter);
     rbusMessage_SetString(setter, "foobar");
-    //if((err = pushObj(setter, argv[2])) == RTMESSAGE_BUS_SUCCESS)
-    if((err = rbus_pushObj(argv[2], setter, 1000)) == RTMESSAGE_BUS_SUCCESS)
+    //if((err = pushObj(setter, argv[2])) == RBUSCORE_SUCCESS)
+    if((err = rbus_pushObj(argv[2], setter, 1000)) == RBUSCORE_SUCCESS)
     {
         printf("Push object %s\n", argv[2]);
     }
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     }
 
     /* Pull again to make sure that "set" worked. */
-    if((err = rbus_pullObj(argv[2], 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(argv[2], 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         printf("Received object %s\n", argv[2]);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     {
         printf("Could not pull object %s\n", argv[2]);
     }
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

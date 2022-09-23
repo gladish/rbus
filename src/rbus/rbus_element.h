@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #include <rbus.h>
-#include <rbus_core.h>
 #include <rtList.h>
 #include <rtVector.h>
 #include <rtTime.h>

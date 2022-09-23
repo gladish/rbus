@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-#ifndef _RBUSCORE_LOG_H_
-#define _RBUSCORE_LOG_H_
+#ifndef __RBUS_CORE_LOG_H__
+#define __RBUS_CORE_LOG_H__
 
 #include <stdarg.h>
 
@@ -42,4 +42,4 @@
 
 #endif /* ENABLE_RDKLOGGER */
 
-#endif  // _RBUSCORE_LOG_H_
+#endif  // __RBUS_CORE_LOG_H__

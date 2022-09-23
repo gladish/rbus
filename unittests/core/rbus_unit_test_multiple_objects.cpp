@@ -42,27 +42,27 @@ char test_buffer[100][100] = {};
 static bool OPEN_BROKER_CONNECTION1(char* connection_name)
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
-    if((err = rbus_openBrokerConnection(connection_name)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(connection_name)) == RBUSCORE_SUCCESS)
     {
          //printf("Successfully connected to bus.\n");
          result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_openBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_openBrokerConnection failed";
     return result;
 }
 
 static bool CLOSE_BROKER_CONNECTION1()
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         //printf("Successfully disconnected from bus.\n");
         result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_closeBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_closeBrokerConnection failed";
     return result;
 }
 
@@ -79,7 +79,7 @@ static void CREATE_RBUS_SERVER_INSTANCE1(int handle, int obj_count)
     char obj_name[20] = "student_info";
     int i = 1;
     char buffer[DEFAULT_RESULT_BUFFERSIZE];
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     bool conn_status = false;
 
     memset( buffer, 0, DEFAULT_RESULT_BUFFERSIZE );
@@ -102,12 +102,12 @@ static void CREATE_RBUS_SERVER_INSTANCE1(int handle, int obj_count)
         strncpy(*(test_buffer + i), buffer, 100);
 
         err = rbus_registerObj(buffer, callback, NULL);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerObj failed";
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerObj failed";
 
         rbus_method_table_entry_t table[2] = {{METHOD_SETPARAMETERVALUES, (void *)(test_buffer + i), handle_setStudentInfo}, {METHOD_GETPARAMETERVALUES, (void *)(test_buffer + i), handle_getStudentInfo}};
 
         err = rbus_registerMethodTable(buffer, table, 2);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerMethodTable failed";
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerMethodTable failed";
     }
     return;
 }
@@ -118,7 +118,7 @@ static void CREATE_RBUS_SERVER_ELEMENTS(int handle, int element_count)
     char obj_name[20] = "student_info.obj";
     int i = 1;
     char buffer[DEFAULT_RESULT_BUFFERSIZE];
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     bool conn_status = false;
 
     memset( buffer, 0, DEFAULT_RESULT_BUFFERSIZE );
@@ -137,12 +137,12 @@ static void CREATE_RBUS_SERVER_ELEMENTS(int handle, int element_count)
     printf("Registering object %s\n", obj_name);
 
     err = rbus_registerObj(obj_name, callback, NULL);
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerObj failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerObj failed";
 
     rbus_method_table_entry_t table[2] = {{METHOD_SETPARAMETERVALUES, (void *)(test_buffer), handle_set1}, {METHOD_GETPARAMETERVALUES, (void *)(test_buffer), handle_get1}};
 
     err = rbus_registerMethodTable(obj_name, table, 2);
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerMethodTable failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerMethodTable failed";
 
     for(i = 1; i < element_count; i++)
     {
@@ -150,18 +150,18 @@ static void CREATE_RBUS_SERVER_ELEMENTS(int handle, int element_count)
         snprintf(buffer, (sizeof(buffer) - 1), "%s.element%d", obj_name, i);
         printf("Adding element %s\n", buffer);
         err = rbus_addElement(obj_name, buffer);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_addElement failed";
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_addElement failed";
     }
     return;
 }
 
-static bool RBUS_PULL_OBJECT1(const char* expected_data, char* server_obj, rbus_error_t expected_err)
+static bool RBUS_PULL_OBJECT1(const char* expected_data, char* server_obj, rbusCoreError_t expected_err)
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage response;
     //printf("pulling data from : %s \n", server_obj);
-    if((err = rbus_pullObj(server_obj, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(server_obj, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         rbusMessage_GetString(response, &buff);
@@ -178,9 +178,9 @@ static bool RBUS_PULL_OBJECT1(const char* expected_data, char* server_obj, rbus_
     return result;
 }
 
-static bool RBUS_PUSH_OBJECT1(char* data, char* server_obj, rbus_error_t expected_err)
+static bool RBUS_PUSH_OBJECT1(char* data, char* server_obj, rbusCoreError_t expected_err)
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage setter;
     rbusMessage_Init(&setter);
     rbusMessage_SetString(setter, data);
@@ -241,8 +241,8 @@ TEST_F(MultipleObjectsTest, rbus_multipleObjects_test1)
             printf("Registering object %s\n", name_buf);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -284,14 +284,14 @@ TEST_F(MultipleObjectsTest, rbus_multipleObjects_test2)
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
         for(i = 1;i < 10;i++)
         {
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -331,14 +331,14 @@ TEST_F(MultipleObjectsTest, rbus_multipleObjects_test3)
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
         for(i = 1;i < 13;i++)
         {
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -378,14 +378,14 @@ TEST_F(MultipleObjectsTest, rbus_multipleObjects_test4)
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
         for(i = 1;i < 15;i++)
         {
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj%d", i);
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -428,7 +428,7 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test1)
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d", i);
             //printf("pushing data : %s to element %s\n", data_buf, name_buf);
 
-            RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
         for(i = 1;i < 15;i++)
         {
@@ -438,7 +438,7 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test1)
             snprintf(data_buf, (sizeof(data_buf) - 1), "student_14");
             //printf("pulling data from element %s\n", name_buf);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -477,14 +477,14 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test2)
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_object_data");
 
-        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
 
         for(i = 1;i < 15;i++)
         {
             memset(name_buf, 0, ELEMENT_NAME_SIZE);
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -523,14 +523,14 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test3)
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element1");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_element1_data");
 
-        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
 
         for(i = 1;i < 15;i++)
         {
             memset(name_buf, 0, ELEMENT_NAME_SIZE);
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -569,21 +569,21 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test4)
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element1");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_element1_data");
 
-        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
 
         memset(name_buf, 0, ELEMENT_NAME_SIZE);
         memset(data_buf, 0, DATA_LENGTH);
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element2");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_element2_data");
 
-        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
 
         for(i = 1;i < 15;i++)
         {
             memset(name_buf, 0, ELEMENT_NAME_SIZE);
             snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element%d", i);
 
-            RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+            RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_SUCCESS);
         }
 
         if(conn_status)
@@ -631,10 +631,10 @@ TEST_F(MultipleObjectsTest, DISABLED_rbus_multipleElement_test5)
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element10");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_element10_data");
 
-//        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE);
+//        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_ERROR_DESTINATION_UNREACHABLE);
 
         /*Trying to pull data from an undefined element*/
-        RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE);
+        RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_ERROR_DESTINATION_UNREACHABLE);
 
         if(conn_status)
             CLOSE_BROKER_CONNECTION1();
@@ -672,10 +672,10 @@ TEST_F(MultipleObjectsTest, DISABLED_rbus_multipleElement_test6)
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.elementNone");
         snprintf(data_buf, (sizeof(data_buf) - 1), "student_data_none");
 
-        RBUS_PUSH_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE);
+        RBUS_PUSH_OBJECT1(data_buf, name_buf, RBUSCORE_ERROR_DESTINATION_UNREACHABLE);
 
         /*Trying to pull data from an undefined element*/
-        RBUS_PULL_OBJECT1(data_buf, name_buf, RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE);
+        RBUS_PULL_OBJECT1(data_buf, name_buf, RBUSCORE_ERROR_DESTINATION_UNREACHABLE);
 
         if(conn_status)
             CLOSE_BROKER_CONNECTION1();
@@ -711,7 +711,7 @@ TEST_F(MultipleObjectsTest, rbus_multipleElement_test7)
 
         snprintf(name_buf, (sizeof(name_buf) - 1), "student_info.obj.element1");
 
-        RBUS_PULL_OBJECT1("init init init", name_buf, RTMESSAGE_BUS_SUCCESS);
+        RBUS_PULL_OBJECT1("init init init", name_buf, RBUSCORE_SUCCESS);
 
         if(conn_status)
             CLOSE_BROKER_CONNECTION1();

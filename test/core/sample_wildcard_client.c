@@ -36,9 +36,9 @@ static void dumpMessage(rbusMessage message)
 
 static void pullAndDumpObject(const char * object)
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage response;
-    if((err = rbus_pullObj(object, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(object, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         printf("Received object %s\n", object);
         dumpMessage(response);
@@ -54,7 +54,7 @@ static void queryWildcardExpression(const char * expression)
     char** dests;
     int num_entries = 0;
     
-    if(RTMESSAGE_BUS_SUCCESS == rbus_discoverWildcardDestinations(expression, &num_entries, &dests))
+    if(RBUSCORE_SUCCESS == rbus_discoverWildcardDestinations(expression, &num_entries, &dests))
     {
         printf("Query for expression %s was successful. See result below:\n", expression);
         for(int i = 0; i < num_entries; i++)
@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection("wildcard_client")) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection("wildcard_client")) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     queryWildcardExpression("device.tr69.");
     queryWildcardExpression("noobject");
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

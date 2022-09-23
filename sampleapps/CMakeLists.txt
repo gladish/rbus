@@ -18,11 +18,10 @@
 # limitations under the License.
 #############################################################################
 
-include_directories(
-    ../include
-    )
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
 
-if (BUILD_RBUS_INTERFACE_SAMPLE_APPS)
+if (BUILD_RBUS_SAMPLE_APPS)
 
 add_executable(rbusSampleProvider provider/rbusSampleProvider.c)
 add_dependencies(rbusSampleProvider rbus)
@@ -117,5 +116,8 @@ install (TARGETS
     rbusMessageSender
     RUNTIME DESTINATION bin)
 
-endif (BUILD_RBUS_INTERFACE_SAMPLE_APPS)
+endif (BUILD_RBUS_SAMPLE_APPS)
 
+if (BUILD_RTMESSAGE_SAMPLE_APP)
+    add_subdirectory(rtmessage)
+endif (BUILD_RTMESSAGE_SAMPLE_APP)

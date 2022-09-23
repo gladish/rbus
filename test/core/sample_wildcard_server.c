@@ -35,7 +35,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
     (void) hdr;
     rbusMessage_Init(response);
     printf("calling get %s, ptr %p\n", (const char *)user_data, user_data);
-    rbusMessage_SetInt32(*response,  RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response,  RBUSCORE_SUCCESS);
     rbusMessage_SetString(*response,  (const char *)user_data);
     return 0;
 }
@@ -53,7 +53,7 @@ static int handle_set(const char * destination, const char * method, rbusMessage
         strncpy((char *)user_data, payload, sizeof(data1));
     }
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response,  RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response,  RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -82,25 +82,25 @@ int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection("wildcard_server")) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection("wildcard_server")) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
 
 
-    if((err = rbus_registerObj(OBJ1_NAME, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(OBJ1_NAME, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
-    if((err = rbus_registerObj(OBJ2_NAME, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(OBJ2_NAME, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
 
-    if((err = rbus_registerObj(OBJ3_NAME, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(OBJ3_NAME, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

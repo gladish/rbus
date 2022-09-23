@@ -17,8 +17,8 @@
   * limitations under the License.
 */
 
-#ifndef __rbusMessage_H__
-#define __rbusMessage_H__ 
+#ifndef __RBUS_CORE_MSG_H__
+#define __RBUS_CORE_MSG_H__ 
 
 #include <rtError.h>
 

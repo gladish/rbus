@@ -16,44 +16,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-if (POLICY CMP0048)
-  cmake_policy(SET CMP0048 NEW)
-  project(rbus-core VERSION 0.0.0)
-else ()
-  project(rbus-core)
-  set(PROJECT_VERSION "0.0.0")
-endif (POLICY CMP0048)
-
-include_directories(
-    ../..
-    ../include)
-
 add_library(
-    rbus-core
-    SHARED
-    rbus_core.c
-    rbus_message.c)
+    rbuscore
+    STATIC
+    rbuscore.c
+    rbuscore_message.c)
 
-include_directories(${RTMESSAGE_INCLUDE_DIRS})
+add_dependencies(rbuscore msgpack rtMessage)
 
-if (BUILD_FOR_DESKTOP)
-    add_dependencies(rbus-core msgpack)
-endif (BUILD_FOR_DESKTOP)
+include_directories(../rtmessage)
 
 target_link_libraries(
-    rbus-core
-    ${RTMESSAGE_LIBRARIES}
-    ${RDKLOGGER_LIBRARIES}
+    rbuscore
+    rtMessage
     ${MSGPACK_LIBRARIES}
     -lpthread)
 
-set_target_properties(rbus-core
+set_target_properties(rbuscore
     PROPERTIES SOVERSION "0"
     VERSION "${PROJECT_VERSION}")
-
-install (TARGETS rbus-core 
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
-
-install (DIRECTORY ../include/ 
-    DESTINATION "include/rbus-core")

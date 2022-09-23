@@ -33,7 +33,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     rbusMessage_SetString(*response, data);
     rbusMessage_SetString(*response, destination);
     return 0;
@@ -46,7 +46,7 @@ static void handle_unknown(const char * destination, const char * method, rbusMe
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+    rbusMessage_SetInt32(*response, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
 }
 
 static int callback(const char * destination, const char * method, rbusMessage message, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -73,20 +73,20 @@ int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection("obj_lookup")) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection("obj_lookup")) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
 
-    if((err = rbus_registerObj("foo", callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj("foo", callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
 
-    if((err = rbus_registerObj("bar", callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj("bar", callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     const int in_length = 12;
     const char *inputs[] = {"foo", "foox.element1", "foox.element2", "bar", "barx.element1", "barx.element2", "abcd", "foox.", "barx.", "common.element1", "common.element2", "common."};
     char **output = NULL;
-    if(RTMESSAGE_BUS_SUCCESS == rbus_discoverElementObjects(inputs, in_length, &output))
+    if(RBUSCORE_SUCCESS == rbus_discoverElementObjects(inputs, in_length, &output))
     {
         printf("Multi-lookup returned success. Printing mapping information...\n");
         for(int i = 0; i < in_length; i++)
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

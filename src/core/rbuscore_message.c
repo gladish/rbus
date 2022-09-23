@@ -22,10 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include "rbus_logger.h"
+#include "rbuscore_logger.h"
 #include "rtRetainable.h"
 #include "rtMemory.h"
-#include "rbus_message.h"
+#include "rbuscore_message.h"
 
 #define VERIFY_UNPACK_NEXT_ITEM()\
     if(msgpack_unpack_next(&message->upk, message->sbuf.data, message->sbuf.size, &message->read_offset) != MSGPACK_UNPACK_SUCCESS)\

@@ -18,7 +18,7 @@
 # limitations under the License.
 #############################################################################
 
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 2.8.12)
 
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
@@ -33,9 +33,26 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 enable_testing()
 
 find_package(PkgConfig REQUIRED)
-find_package(rbus-core REQUIRED)
-find_package(rtMessage REQUIRED)
-find_package(linenoise REQUIRED)
+
+if (CMAKE_VERSION VERSION_LESS "3.1")
+  message("CMAKE ${CMAKE_CXX_COMPILER_ID}")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      set (CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
+      set (CMAKE_C_FLAGS "-std=c11 ${CMAKE_C_FLAGS}")
+  endif ()
+else ()
+  set (CMAKE_CXX_STANDARD 11)
+  set (CMAKE_C_STANDARD 11)
+endif ()
+
+IF (NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+ELSE ()
+  set(CMAKE_BUILD_TYPE "Debug")
+ENDIF ()
+
+set(CMAKE_C_FLAGS_DEBUG "-fPIC -Wall -Werror -Wextra -Wno-type-limits -g -O0 -fno-inline")
+set(CMAKE_C_FLAGS_RELEASE "-fPIC -Wall -Werror -Wextra -g -O3")
 
 IF (NOT DEFINED CMAKE_INSTALL_BINDIR)
     SET(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_PREFIX}/bin)
@@ -47,7 +64,7 @@ ENDIF ()
 
 include(CMakePackageConfigHelpers)
 
-SET (CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/rBus")
+SET (CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/rbus")
 
 configure_package_config_file(rbusConfig.cmake.in
   rbusConfig.cmake
@@ -65,23 +82,109 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/rbusConfig.cmake"
 if (BUILD_FOR_DESKTOP)
   message("Building for desktop")
   include_directories(${CMAKE_INSTALL_PREFIX}/include)
+
+  include(ExternalProject)
+  ExternalProject_Add(
+    cjson
+    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+    GIT_TAG v1.6.0
+    INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+    INSTALL_COMMAND ""
+    CONFIGURE_COMMAND ""
+    BUILD_IN_SOURCE 1
+    PREFIX deps
+    CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+    BUILD_COMMAND make)
+
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/deps/src)
+  link_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson
+    ${CMAKE_BINARY_DIR}
+    ${LIBRARY_DIR})
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so.1 ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so.1.6.0 DESTINATION lib)
+
+
+  ExternalProject_Add(
+    linenoise
+    GIT_REPOSITORY https://github.com/antirez/linenoise.git
+    PREFIX deps
+    UPDATE_DISCONNECTED 1
+    INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+    INSTALL_COMMAND ""
+    CONFIGURE_COMMAND ""
+    BUILD_IN_SOURCE 1
+    CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+    #PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_SOURCE_DIR}/003-linenoise-oflag.patch
+    BUILD_COMMAND gcc -c -Wall -Werror -fpic linenoise.c COMMAND gcc --shared -o liblinenoise.so linenoise.o)
+
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/deps/src/linenoise)
+
+  link_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/deps/src/linenoise
+    ${CMAKE_BINARY_DIR}
+    ${LIBRARY_DIR})
+
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deps/src/linenoise/liblinenoise.so DESTINATION lib)
+
+  ExternalProject_Add(
+    msgpack
+    GIT_REPOSITORY https://github.com/msgpack/msgpack-c.git
+    GIT_TAG 2.1.4
+    PREFIX deps
+    UPDATE_DISCONNECTED 1
+    INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
+    BUILD_IN_SOURCE 1
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DMSGPACK_BUILD_EXAMPLES=OFF -DMSGPACK_BUILD_TESTS=OFF
+    BUILD_COMMAND make)
+
+  set(MSGPACK_LIBRARIES "-lmsgpackc")
+
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/msgpack/src/msgpack/include)
+  link_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/deps/src/msgpack
+    ${CMAKE_BINARY_DIR}
+    ${LIBRARY_DIR})
+
+else()
+  find_package(cJSON REQUIRED)
+  find_package(msgpack REQUIRED)
+  find_package(linenoise REQUIRED)
+
+  set(INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
+  set(LIBRARY_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories(${CJSON_INCLUDE_DIRS})
+  include_directories(${MSGPACK_INCLUDE_DIRS})
+  link_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+  if (ENABLE_RDKLOGGER)
+    include_directories(${RDKLOGGER__INCLUDE_DIRS})
+    add_definitions(-DENABLE_RDKLOGGER)
+  else ()
+  endif (ENABLE_RDKLOGGER)
+  
+  if (INCLUDE_BREAKPAD)
+    include_directories(${BREAKPAD_PATH})
+    link_directories(${BREAKPAD_PATH})
+    add_definitions(-DINCLUDE_BREAKPAD)
+  endif (INCLUDE_BREAKPAD)
+
+  if (RDKC_BUILD)
+    add_definitions(-DRDKC_BUILD)
+  endif (RDKC_BUILD)
 endif (BUILD_FOR_DESKTOP)
 
-if (CMAKE_VERSION VERSION_LESS "3.1")
-  message("CMAKE ${CMAKE_CXX_COMPILER_ID}")
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      set (CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
-      set (CMAKE_C_FLAGS "-std=c11 ${CMAKE_C_FLAGS}")
-  endif ()
-else ()
-  set (CMAKE_CXX_STANDARD 11)
-  set (CMAKE_C_STANDARD 11)
-endif ()
-
-
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_C_FLAGS_DEBUG "-Wall -Werror -Wextra -Wno-type-limits -g -fno-inline")
-set(CMAKE_C_FLAGS_RELEASE "-Wall -Werror -Wextra")
 
 if (ENABLE_CODE_COVERAGE)
     include (CodeCoverage)
@@ -119,52 +222,32 @@ if (ENABLE_STATIC_CODE_ANALYZER)
                  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json)
 endif()
 
-option(BUILD_RBUS_INTERFACE_SAMPLE_APPS "BUILD_RBUS_INTERFACE_SAMPLE_APPS" ON)
-option(BUILD_RBUS_INTERFACE_TEST_APPS "BUILD_RBUS_INTERFACE_TEST_APPS" ON)
-option(BUILD_RBUS_INTERFACE_UTIL_APPS "BUILD_RBUS_INTERFACE_UTIL_APPS" ON)
+option(BUILD_RBUS_DAEMON "BUILD_RBUS_DAEMON" ON)
+option(BUILD_RBUS_SAMPLE_APPS "BUILD_RBUS_SAMPLE_APPS" ON)
+option(BUILD_RBUS_TEST_APPS "BUILD_RBUS_TEST_APPS" ON)
+
+option(BUILD_RTMESSAGE_DATAPROVIDER_LIB "BUILD_RTMESSAGE_DATAPROVIDER_LIB" OFF)
+option(BUILD_RBUSCORE_TEST_APPS "BUILD_RBUSCORE_TEST_APPS" OFF)
+option(BUILD_SESSIONMGR_SAMPLE_APPS "BUILD_SESSIONMGR_SAMPLE_APPS" OFF)
+option(BUILD_RTMESSAGE_SAMPLE_APP "BUILD_RTMESSAGE_SAMPLE_APP" OFF)
+
 option(ENABLE_RDKLOGGER "ENABLE_RDKLOGGER" OFF)
+option(RDKC_BUILD "RDKC_BUILD" OFF)
+option(WITH_SPAKE2 "WITH_SPAKE2" OFF)
+option(MSG_ROUNDTRIP_TIME "MSG_ROUNDTRIP_TIME" OFF)
 
 if (ENABLE_RDKLOGGER)
     find_package(rdklogger REQUIRED)
     add_definitions(-DENABLE_RDKLOGGER)
 endif (ENABLE_RDKLOGGER)
 
-add_library(rBus ${CMAKE_INSTALL_PREFIX})
-
-SET_TARGET_PROPERTIES (rBus PROPERTIES OUTPUT_NAME "rBus")
-SET_TARGET_PROPERTIES(rBus PROPERTIES LINKER_LANGUAGE C)
-
-SET (RBUS_INSTALLTARGETS rBus)
-
-INSTALL (TARGETS ${RBUS_INSTALLTARGETS} EXPORT rbus-targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-EXPORT (EXPORT rbus-targets
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/rbus-targets.cmake"
-)
-
-INSTALL (EXPORT rbus-targets
-    FILE
-        rbus-targets.cmake
-    DESTINATION
-        "${CMAKE_INSTALL_CMAKEDIR}"
-)
 
 add_subdirectory(src)
+add_subdirectory(utils)
+add_subdirectory(test)
 
-if(BUILD_RBUS_INTERFACE_SAMPLE_APPS)
+if(BUILD_RBUS_SAMPLE_APPS)
     add_subdirectory(sampleapps)
-endif()
-
-if(BUILD_RBUS_INTERFACE_TEST_APPS)
-    add_subdirectory(test)
-endif()
-
-if(BUILD_RBUS_INTERFACE_UTIL_APPS)
-    add_subdirectory(util)
 endif()
 
 if (ENABLE_UNIT_TESTING)

@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <rtVector.h>
 #include <rtMemory.h>
-#include <rbus_core.h>
+#include <rbuscore.h>
 #include <rbus_session_mgr.h>
 #include <rbus.h>
 #include "rbus_buffer.h"
@@ -36,6 +36,7 @@
 #include "rbus_config.h"
 #include "rbus_log.h"
 #include "rbus_handle.h"
+#include "rbus_message.h"
 
 //******************************* MACROS *****************************************//
 #define UNUSED1(a)              (void)(a)
@@ -108,49 +109,49 @@ static rbusError_t rbuscoreError_to_rbusError(rtError e)
   rbusError_t err;
   switch (e)
   {
-    case RTMESSAGE_BUS_SUCCESS:
+    case RBUSCORE_SUCCESS:
       err = RBUS_ERROR_SUCCESS;
       break;
-    case RTMESSAGE_BUS_ERROR_GENERAL:
+    case RBUSCORE_ERROR_GENERAL:
       err = RBUS_ERROR_BUS_ERROR;
       break;
-    case RTMESSAGE_BUS_ERROR_INVALID_PARAM:
+    case RBUSCORE_ERROR_INVALID_PARAM:
       err = RBUS_ERROR_INVALID_INPUT;
       break;
-    case RTMESSAGE_BUS_ERROR_INVALID_STATE:
+    case RBUSCORE_ERROR_INVALID_STATE:
       err = RBUS_ERROR_SESSION_ALREADY_EXIST;
       break;
-    case RTMESSAGE_BUS_ERROR_INSUFFICIENT_MEMORY:
+    case RBUSCORE_ERROR_INSUFFICIENT_MEMORY:
       err = RBUS_ERROR_OUT_OF_RESOURCES;
       break;
-    case RTMESSAGE_BUS_ERROR_REMOTE_END_DECLINED_TO_RESPOND:
+    case RBUSCORE_ERROR_REMOTE_END_DECLINED_TO_RESPOND:
       err = RBUS_ERROR_DESTINATION_RESPONSE_FAILURE;
       break;
-    case RTMESSAGE_BUS_ERROR_REMOTE_END_FAILED_TO_RESPOND:
+    case RBUSCORE_ERROR_REMOTE_END_FAILED_TO_RESPOND:
       err = RBUS_ERROR_DESTINATION_RESPONSE_FAILURE;
       break;
-    case RTMESSAGE_BUS_ERROR_REMOTE_TIMED_OUT:
+    case RBUSCORE_ERROR_REMOTE_TIMED_OUT:
       err = RBUS_ERROR_TIMEOUT;
       break;
-    case RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE:
+    case RBUSCORE_ERROR_MALFORMED_RESPONSE:
       err = RBUS_ERROR_INVALID_RESPONSE_FROM_DESTINATION;
       break;
-    case RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD:
+    case RBUSCORE_ERROR_UNSUPPORTED_METHOD:
       err = RBUS_ERROR_INVALID_METHOD;
       break;
-    case RTMESSAGE_BUS_ERROR_UNSUPPORTED_EVENT:
+    case RBUSCORE_ERROR_UNSUPPORTED_EVENT:
       err = RBUS_ERROR_INVALID_EVENT;
       break;
-    case RTMESSAGE_BUS_ERROR_OUT_OF_RESOURCES:
+    case RBUSCORE_ERROR_OUT_OF_RESOURCES:
       err = RBUS_ERROR_OUT_OF_RESOURCES;
       break;
-    case RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE:
+    case RBUSCORE_ERROR_DESTINATION_UNREACHABLE:
       err = RBUS_ERROR_DESTINATION_NOT_REACHABLE;
       break;
-    case RTMESSAGE_BUS_SUCCESS_ASYNC:
+    case RBUSCORE_SUCCESS_ASYNC:
       err = RBUS_ERROR_ASYNC_RESPONSE;
       break;
-    case RTMESSAGE_BUS_SUBSCRIBE_NOT_HANDLED:
+    case RBUSCORE_ERROR_SUBSCRIBE_NOT_HANDLED:
       err = RBUS_ERROR_INVALID_OPERATION;
       break;
     default:
@@ -902,7 +903,7 @@ int subscribeHandlerImpl(
 
         if(!subscription)
         {
-            return RTMESSAGE_BUS_ERROR_INVALID_STATE; /*unexpected*/
+            return RBUSCORE_ERROR_INVALID_STATE; /*unexpected*/
         }
     }
     else
@@ -912,7 +913,7 @@ int subscribeHandlerImpl(
         if(!subscription)
         {
             RBUSLOG_INFO("unsubscribing from event which isn't currectly subscribed to event=%s listener=%s", eventName, listener);
-            return RTMESSAGE_BUS_ERROR_INVALID_PARAM; /*unsubscribing from event which isn't currectly subscribed to*/
+            return RBUSCORE_ERROR_INVALID_PARAM; /*unsubscribing from event which isn't currectly subscribed to*/
         }
     }
 
@@ -954,7 +955,7 @@ int subscribeHandlerImpl(
     {
         rbusSubscriptions_removeSubscription(handleInfo->subscriptions, subscription);
     }
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
 static void registerTableRow (rbusHandle_t handle, elementNode* tableInstElem, char const* tableName, char const* aliasName, uint32_t instNum)
@@ -1065,7 +1066,7 @@ static int _event_subscribe_callback_handler(char const* object,  char const* ev
 {
     rbusHandle_t handle = (rbusHandle_t)userData;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)userData;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     UNUSED1(object);
 
@@ -1110,7 +1111,7 @@ static int _event_subscribe_callback_handler(char const* object,  char const* ev
     else
     {
         RBUSLOG_WARN("event subscribe callback: unexpected! element not found");
-        err = RTMESSAGE_BUS_ERROR_UNSUPPORTED_EVENT;
+        err = RBUSCORE_ERROR_UNSUPPORTED_EVENT;
     }
     return err;
 }
@@ -1185,7 +1186,7 @@ static int _master_event_callback_handler(char const* sender, char const* eventN
     if(!handleInfo)
     {
         RBUSLOG_INFO("Received master event callback with invalid componentId: sender=%s eventName=%s componentId=%d", sender, eventName, componentId);
-        return RTMESSAGE_BUS_EVENT_NOT_HANDLED;
+        return RBUSCORE_ERROR_EVENT_NOT_HANDLED;
     }
 
     RBUSLOG_DEBUG("Received master event callback: sender=%s eventName=%s componentId=%d", sender, eventName, componentId);
@@ -1199,13 +1200,13 @@ static int _master_event_callback_handler(char const* sender, char const* eventN
     else
     {
         RBUSLOG_DEBUG("Received master event callback: sender=%s eventName=%s, but no subscription found", sender, event.name);
-        return RTMESSAGE_BUS_EVENT_NOT_HANDLED;
+        return RBUSCORE_ERROR_EVENT_NOT_HANDLED;
     }
 
     rbusObject_Release(event.data);
     rbusFilter_Release(filter);
 
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
 static void _set_callback_handler (rbusHandle_t handle, rbusMessage request, rbusMessage *response)
@@ -2126,7 +2127,7 @@ static int _method_callback_handler(rbusHandle_t handle, rbusMessage request, rb
 
     if(result == RBUS_ERROR_ASYNC_RESPONSE)
     {
-        return RTMESSAGE_BUS_SUCCESS_ASYNC;
+        return RBUSCORE_SUCCESS_ASYNC;
     }
     else
     {
@@ -2134,7 +2135,7 @@ static int _method_callback_handler(rbusHandle_t handle, rbusMessage request, rb
         rbusMessage_SetInt32(*response, result);
         rbusObject_appendToMessage(outParams, *response);
         rbusObject_Release(outParams);
-        return RTMESSAGE_BUS_SUCCESS; 
+        return RBUSCORE_SUCCESS; 
     }
 }
 
@@ -2209,7 +2210,7 @@ static void _rbus_mutex_destructor()
 rbusError_t rbus_open(rbusHandle_t* handle, char const* componentName)
 {
     rbusError_t ret = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusHandle_t tmpHandle = NULL;
     static int32_t sLastComponentId = 0;
 
@@ -2258,7 +2259,7 @@ rbusError_t rbus_open(rbusHandle_t* handle, char const* componentName)
     {
         RBUSLOG_DEBUG("%s(%s): opening broker connection", __FUNCTION__, componentName);
 
-        if((err = rbus_openBrokerConnection(componentName)) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_openBrokerConnection(componentName)) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s(%s): rbus_openBrokerConnection error %d", __FUNCTION__, componentName, err);
             goto exit_error1;
@@ -2267,14 +2268,14 @@ rbusError_t rbus_open(rbusHandle_t* handle, char const* componentName)
 
     tmpHandle = rt_calloc(1, sizeof(struct _rbusHandle));
 
-    if((err = rbus_registerObj(componentName, _callback_handler, tmpHandle)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(componentName, _callback_handler, tmpHandle)) != RBUSCORE_SUCCESS)
     {
         /*This will fail if the same name was previously registered (by another rbus_open or ccsp msg bus init)*/
         RBUSLOG_ERROR("%s(%s): rbus_registerObj error %d", __FUNCTION__, componentName, err);
         goto exit_error2;
     }
 
-    if((err = rbus_registerSubscribeHandler(componentName, _event_subscribe_callback_handler, tmpHandle)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerSubscribeHandler(componentName, _event_subscribe_callback_handler, tmpHandle)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s(%s): rbus_registerSubscribeHandler error %d", __FUNCTION__, componentName, err);
         goto exit_error3;
@@ -2298,17 +2299,17 @@ rbusError_t rbus_open(rbusHandle_t* handle, char const* componentName)
 
 exit_error3:
 
-    if((err = rbus_unregisterObj(componentName)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_unregisterObj(componentName)) != RBUSCORE_SUCCESS)
         RBUSLOG_ERROR("%s(%s): rbus_unregisterObj error %d", __FUNCTION__, componentName, err);
 
 exit_error2:
 
     if(rbus_getConnection() && rbusHandleList_IsEmpty())
-        if((err = rbus_unregisterClientDisconnectHandler()) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_unregisterClientDisconnectHandler()) != RBUSCORE_SUCCESS)
             RBUSLOG_ERROR("%s(%s): rbus_unregisterClientDisconnectHandler error %d", __FUNCTION__, componentName, err);
 
     if(rbus_getConnection() && rbusHandleList_IsEmpty())
-        if((err = rbus_closeBrokerConnection()) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_closeBrokerConnection()) != RBUSCORE_SUCCESS)
             RBUSLOG_ERROR("%s(%s): rbus_closeBrokerConnection error %d", __FUNCTION__, componentName, err);
 
 exit_error1:
@@ -2337,7 +2338,7 @@ exit_error0:
 rbusError_t rbus_close(rbusHandle_t handle)
 {
     rbusError_t ret = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
     char* componentName = NULL;
 
@@ -2388,7 +2389,7 @@ rbusError_t rbus_close(rbusHandle_t handle)
         handleInfo->elementRoot = NULL;
     }
 
-    if((err = rbus_unregisterObj(handleInfo->componentName)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_unregisterObj(handleInfo->componentName)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s(%s): rbus_unregisterObj error %d", __FUNCTION__, handleInfo->componentName, err);
         ret = RBUS_ERROR_INVALID_HANDLE;
@@ -2403,13 +2404,13 @@ rbusError_t rbus_close(rbusHandle_t handle)
         RBUSLOG_DEBUG("%s(%s): closing broker connection", __FUNCTION__, componentName);
 
         //calling before closing connection
-        if((err = rbus_unregisterClientDisconnectHandler()) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_unregisterClientDisconnectHandler()) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s(%s): rbus_unregisterClientDisconnectHandler error %d", __FUNCTION__, componentName, err);
             ret = RBUS_ERROR_BUS_ERROR;
         }
 
-        if((err = rbus_closeBrokerConnection()) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_closeBrokerConnection()) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s(%s): rbus_closeBrokerConnection error %d", __FUNCTION__, componentName, err);
             ret = RBUS_ERROR_BUS_ERROR;
@@ -2436,7 +2437,7 @@ rbusError_t rbus_regDataElements(
     static bool sDisConnHandler = false;
     int i;
     rbusError_t rc = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
 
     VERIFY_NULL(handleInfo);
@@ -2467,7 +2468,7 @@ rbusError_t rbus_regDataElements(
             rbusSubscriptions_create(&handleInfo->subscriptions, handle, handleInfo->componentName, handleInfo->elementRoot, rbusConfig_Get()->tmpDir);
         }
 
-        if((err = rbus_addElement(handleInfo->componentName, name)) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_addElement(handleInfo->componentName, name)) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s: failed to add element with core [%s] err=%d!!", __FUNCTION__, name, err);
             rc = RBUS_ERROR_ELEMENT_NAME_DUPLICATE;
@@ -2504,7 +2505,7 @@ rbusError_t rbus_regDataElements(
     if((rc == RBUS_ERROR_SUCCESS) && (!sDisConnHandler))
     {
         err = rbus_registerClientDisconnectHandler(_client_disconnect_callback_handler);
-        if(err != RTMESSAGE_BUS_SUCCESS)
+        if(err != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s : rbus_registerClientDisconnectHandler error %d", __FUNCTION__, err);
         }
@@ -2531,10 +2532,10 @@ rbusError_t rbus_unregDataElements(
     {
         char const* name = elements[i].name;
 /*
-        if(rbus_unregisterEvent(handleInfo->componentName, name) != RTMESSAGE_BUS_SUCCESS)
+        if(rbus_unregisterEvent(handleInfo->componentName, name) != RBUSCORE_SUCCESS)
             RBUSLOG_INFO("%s: failed to remove event [%s]!!", __FUNCTION__, name);
 */
-        if(rbus_removeElement(handleInfo->componentName, name) != RTMESSAGE_BUS_SUCCESS)
+        if(rbus_removeElement(handleInfo->componentName, name) != RBUSCORE_SUCCESS)
             RBUSLOG_WARN("%s: failed to remove element from core [%s]!!", __FUNCTION__, name);
 
 /*      TODO: we need to remove all instance elements that this registration element instantiated
@@ -2564,7 +2565,7 @@ rbusError_t rbus_discoverComponentName (rbusHandle_t handle,
     *componentName = 0;
     char **output = NULL;
     int out_count = 0;
-    if(RTMESSAGE_BUS_SUCCESS == rbus_discoverElementsObjects(numElements, elementNames, &out_count, &output))
+    if(RBUSCORE_SUCCESS == rbus_discoverElementsObjects(numElements, elementNames, &out_count, &output))
     {
         *componentName = output;
         *numComponents = out_count;
@@ -2581,7 +2582,7 @@ rbusError_t rbus_discoverComponentDataElements (rbusHandle_t handle,
                             char const* name, bool nextLevel,
                             int *numElements, char*** elementNames)
 {
-    rbus_error_t ret;
+    rbusCoreError_t ret;
 
     *numElements = 0;
     *elementNames = 0;
@@ -2596,14 +2597,14 @@ rbusError_t rbus_discoverComponentDataElements (rbusHandle_t handle,
             *numElements = *numElements-1;  //Fix this. We need a better way to ignore the component name as element name.
     */
 
-    return ret == RTMESSAGE_BUS_SUCCESS ? RBUS_ERROR_SUCCESS : RBUS_ERROR_BUS_ERROR;
+    return ret == RBUSCORE_SUCCESS ? RBUS_ERROR_SUCCESS : RBUS_ERROR_BUS_ERROR;
 }
 
 //************************* Parameters related Operations *******************//
 rbusError_t rbus_get(rbusHandle_t handle, char const* name, rbusValue_t* value)
 {
     rbusError_t errorcode = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage request, response;
     int ret = -1;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
@@ -2632,7 +2633,7 @@ rbusError_t rbus_get(rbusHandle_t handle, char const* name, rbusValue_t* value)
 
     RBUSLOG_DEBUG("Calling rbus_invokeRemoteMethod for [%s]", name);
 
-    if((err = rbus_invokeRemoteMethod(name, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_invokeRemoteMethod(name, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, name);
         errorcode = rbuscoreError_to_rbusError(err);
@@ -2747,7 +2748,7 @@ rbusError_t _getExt_response_parser(rbusMessage response, int *numValues, rbusPr
 rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParamNames, int *numValues, rbusProperty_t* retProperties)
 {
     rbusError_t errorcode = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     int i;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
 
@@ -2764,7 +2765,7 @@ rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParam
         //int length = strlen(pParamNames[0]);
 
         err = rbus_discoverWildcardDestinations(pParamNames[0], &numDestinations, &destinations);
-        if (RTMESSAGE_BUS_SUCCESS == err)
+        if (RBUSCORE_SUCCESS == err)
         {
             RBUSLOG_DEBUG("Query for expression %s was successful. See result below:", pParamNames[0]);
             rbusProperty_t last = NULL;
@@ -2788,7 +2789,7 @@ rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParam
                     rbusMessage_SetInt32(request, 1);
                     rbusMessage_SetString(request, pParamNames[0]);
                     /* Invoke the method */
-                    if((err = rbus_invokeRemoteMethod(destinations[i], METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RTMESSAGE_BUS_SUCCESS)
+                    if((err = rbus_invokeRemoteMethod(destinations[i], METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, destinations[i]);
                         errorcode = rbuscoreError_to_rbusError(err);
@@ -2940,7 +2941,7 @@ rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParam
                     RBUSLOG_DEBUG("%s sending batch request with %d params to component %s", __FUNCTION__, batchCount, componentName);
                     free(componentName);
 
-                    if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RTMESSAGE_BUS_SUCCESS)
+                    if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, firstParamName);
                         errorcode = rbuscoreError_to_rbusError(err);
@@ -3055,7 +3056,7 @@ rbusError_t rbus_getStr (rbusHandle_t handle, char const* paramName, char** para
 rbusError_t rbus_set(rbusHandle_t handle, char const* name,rbusValue_t value, rbusSetOptions_t* opts)
 {
     rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage setRequest, setResponse;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
 
@@ -3085,7 +3086,7 @@ rbusError_t rbus_set(rbusHandle_t handle, char const* name,rbusValue_t value, rb
     /* Set the Commit value; FIXME: Should we use string? */
     rbusMessage_SetString(setRequest, (!opts || opts->commit) ? "TRUE" : "FALSE");
 
-    if((err = rbus_invokeRemoteMethod(name, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_invokeRemoteMethod(name, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, name);
         errorcode = rbuscoreError_to_rbusError(err);
@@ -3125,7 +3126,7 @@ rbusError_t rbus_set(rbusHandle_t handle, char const* name,rbusValue_t value, rb
 rbusError_t rbus_setMulti(rbusHandle_t handle, int numProps, rbusProperty_t properties, rbusSetOptions_t* opts)
 {
     rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage setRequest, setResponse;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
     rbusValueType_t type = RBUS_NONE;
@@ -3255,7 +3256,7 @@ rbusError_t rbus_setMulti(rbusHandle_t handle, int numProps, rbusProperty_t prop
                     /* Set the Commit value; FIXME: Should we use string? */
                     rbusMessage_SetString(setRequest, (!opts || opts->commit) ? "TRUE" : "FALSE");
 
-                    if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RTMESSAGE_BUS_SUCCESS)
+                    if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, firstParamName);
                         errorcode = rbuscoreError_to_rbusError(err);
@@ -3323,7 +3324,7 @@ rbusError_t rbus_setMulti(rbusHandle_t handle, int numValues,
         char const** valueNames, rbusValue_t* values, rbusSetOptions_t* opts)
 {
     rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage setRequest, setResponse;
     int loopCnt = 0;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
@@ -3356,7 +3357,7 @@ rbusError_t rbus_setMulti(rbusHandle_t handle, int numValues,
         char const* pElementNames[] = {values[0].name, NULL};
         char** pComponentName = NULL;
         err = rbus_discoverElementObjects(pElementNames, 1, &pComponentName);
-        if (err != RTMESSAGE_BUS_SUCCESS)
+        if (err != RBUSCORE_SUCCESS)
         {
             RBUSLOG_INFO ("Element not found");
             errorcode = RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
@@ -3367,7 +3368,7 @@ rbusError_t rbus_setMulti(rbusHandle_t handle, int numValues,
             free (pComponentName[0]);
         }
 #endif
-        if((err = rbus_invokeRemoteMethod(valueNames[0], METHOD_SETPARAMETERVALUES, setRequest, 6000, &setResponse)) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_invokeRemoteMethod(valueNames[0], METHOD_SETPARAMETERVALUES, setRequest, 6000, &setResponse)) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_INFO("%s rbus_invokeRemoteMethod failed with err %d", __FUNCTION__, err);
             errorcode = RBUS_ERROR_BUS_ERROR;
@@ -3464,7 +3465,7 @@ rbusError_t rbusTable_addRow(
     char const* aliasName,
     uint32_t* instNum)
 {
-    rbus_error_t err;
+    rbusCoreError_t err;
     int returnCode = 0;
     int32_t instanceId = 0;
     const char dot = '.';
@@ -3497,7 +3498,7 @@ rbusError_t rbusTable_addRow(
         METHOD_ADDTBLROW, 
         request, 
         rbusConfig_ReadSetTimeout(),
-        &response)) != RTMESSAGE_BUS_SUCCESS)
+        &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, tableName);
         return rbuscoreError_to_rbusError(err);
@@ -3535,7 +3536,7 @@ rbusError_t rbusTable_removeRow(
     rbusHandle_t handle,
     char const* rowName)
 {
-    rbus_error_t err;
+    rbusCoreError_t err;
     int returnCode = 0;
     rbusMessage request, response;
     (void)handle;
@@ -3555,7 +3556,7 @@ rbusError_t rbusTable_removeRow(
         METHOD_DELETETBLROW, 
         request, 
         rbusConfig_ReadSetTimeout(),
-        &response)) != RTMESSAGE_BUS_SUCCESS)
+        &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, rowName);
         return rbuscoreError_to_rbusError(err);
@@ -3652,7 +3653,7 @@ rbusError_t rbusTable_getRowNames(
     rbusRowName_t** rowNames)
 {
     rbusError_t errorcode = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage request, response;
 
     VERIFY_NULL(handle);
@@ -3666,7 +3667,7 @@ rbusError_t rbusTable_getRowNames(
 
     RBUSLOG_DEBUG("%s: %s", __FUNCTION__, tableName);
 
-    if((err = rbus_invokeRemoteMethod(tableName, METHOD_GETPARAMETERNAMES, request, rbusConfig_ReadGetTimeout(), &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_invokeRemoteMethod(tableName, METHOD_GETPARAMETERNAMES, request, rbusConfig_ReadGetTimeout(), &response)) == RBUSCORE_SUCCESS)
     {
         rbusLegacyReturn_t legacyRetCode = RBUS_LEGACY_ERR_FAILURE;
         int ret = -1;
@@ -3765,7 +3766,7 @@ rbusError_t rbusElementInfo_get(
     rbusElementInfo_t** elemInfo)
 {
     rbusError_t errorcode = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage request, response;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*) handle;
     int numDestinations = 0;
@@ -3785,7 +3786,7 @@ rbusError_t rbusElementInfo_get(
     }
 
     err = rbus_discoverElementObjects(elemName, &numDestinations, &destinations);
-    if (RTMESSAGE_BUS_SUCCESS != err)
+    if (RBUSCORE_SUCCESS != err)
     {
         RBUSLOG_ERROR("%s rbus_discoverElementObjects %s failed: err=%d", __FUNCTION__, elemName, err);
         return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
@@ -3803,7 +3804,7 @@ rbusError_t rbusElementInfo_get(
         rbusMessage_SetInt32(request, depth);/*depth*/
         rbusMessage_SetInt32(request, 0);/*not row names*/
 
-        if((err = rbus_invokeRemoteMethod(destinations[d], METHOD_GETPARAMETERNAMES, request, rbusConfig_ReadGetTimeout(), &response)) != RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_invokeRemoteMethod(destinations[d], METHOD_GETPARAMETERNAMES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s rbus_invokeRemoteMethod %s destination=%s object=%s failed: err=%d", __FUNCTION__, METHOD_GETPARAMETERNAMES, destinations[d], elemName, err);
             errorcode = rbuscoreError_to_rbusError(err);
@@ -3925,7 +3926,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
     int                             timeout,
     rbusSubscribeAsyncRespHandler_t async)
 {
-    rbus_error_t coreerr;
+    rbusCoreError_t coreerr;
     int providerError = RBUS_ERROR_SUCCESS;
     rbusEventSubscription_t* sub;
     rbusMessage payload = NULL;
@@ -3980,7 +3981,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
 
         coreerr = rbus_subscribeToEventTimeout(NULL, sub->eventName, _event_callback_handler, payload, sub, &providerError, destNotFoundTimeout);
         
-        if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE && destNotFoundTimeout > 0)
+        if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE && destNotFoundTimeout > 0)
         {
             int sleepTime = destNotFoundSleep;
 
@@ -4012,7 +4013,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
         rbusMessage_Release(payload);
     }
 
-    if(coreerr == RTMESSAGE_BUS_SUCCESS)
+    if(coreerr == RBUSCORE_SUCCESS)
     {
         rtVector_PushBack(handleInfo->eventSubs, sub);
 
@@ -4024,7 +4025,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
     {
         rbusEventSubscription_free(sub);
 
-        if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE)
+        if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE)
         {
             RBUSLOG_DEBUG("%s: %s all subscribe retries failed because no provider could be found", __FUNCTION__, eventName);
             RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_NO_PROVIDER_COMPONENT  %s", eventName);/*RDKB-33658-AC7*/
@@ -4116,7 +4117,7 @@ rbusError_t rbusEvent_Unsubscribe(
     {
         rbusMessage payload = rbusEvent_CreateSubscribePayload(sub, handleInfo->componentId);
 
-        rbus_error_t coreerr = rbus_unsubscribeFromEvent(NULL, eventName, payload);
+        rbusCoreError_t coreerr = rbus_unsubscribeFromEvent(NULL, eventName, payload);
 
         if(payload)
         {
@@ -4125,7 +4126,7 @@ rbusError_t rbusEvent_Unsubscribe(
 
         rtVector_RemoveItem(handleInfo->eventSubs, sub, rbusEventSubscription_free);
 
-        if(coreerr == RTMESSAGE_BUS_SUCCESS)
+        if(coreerr == RBUSCORE_SUCCESS)
         {
             return RBUS_ERROR_SUCCESS;
         }
@@ -4133,7 +4134,7 @@ rbusError_t rbusEvent_Unsubscribe(
         {
             RBUSLOG_INFO("%s: %s failed with core err=%d", __FUNCTION__, eventName, coreerr);
             
-            if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE)
+            if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE)
             {
                 return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
             }
@@ -4264,7 +4265,7 @@ rbusError_t rbusEvent_UnsubscribeEx(
         sub = rbusEventSubscription_find(handleInfo->eventSubs, subscription[i].eventName, subscription[i].filter);
         if(sub)
         {
-            rbus_error_t coreerr;
+            rbusCoreError_t coreerr;
             rbusMessage payload;
 
             payload = rbusEvent_CreateSubscribePayload(sub, handleInfo->componentId);
@@ -4278,12 +4279,12 @@ rbusError_t rbusEvent_UnsubscribeEx(
 
             rtVector_RemoveItem(handleInfo->eventSubs, sub, rbusEventSubscription_free);
 
-            if(coreerr != RTMESSAGE_BUS_SUCCESS)
+            if(coreerr != RBUSCORE_SUCCESS)
             {
                 RBUSLOG_INFO("%s: %s failed with core err=%d", __FUNCTION__, sub->eventName, coreerr);
                 
                 //FIXME -- we just overwrite any existing error that might have happened in a previous loop
-                if(coreerr == RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE)
+                if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE)
                 {
                     errorcode = RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
                 }
@@ -4317,7 +4318,7 @@ rbusError_t  rbusEvent_Publish(
   rbusEvent_t*          eventData)
 {
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
-    rbus_error_t err, errOut = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err, errOut = RBUSCORE_SUCCESS;
     rtListItem listItem;
     rbusSubscription_t* subscription;
     rbusValue_t newVal = NULL;
@@ -4367,8 +4368,8 @@ rbusError_t  rbusEvent_Publish(
         if(!subscription || !subscription->eventName || !subscription->listener)
         {
             RBUSLOG_INFO("rbusEvent_Publish failed: null subscriber data");
-            if(errOut == RTMESSAGE_BUS_SUCCESS)
-                errOut = RTMESSAGE_BUS_ERROR_GENERAL;
+            if(errOut == RBUSCORE_SUCCESS)
+                errOut = RBUSCORE_ERROR_GENERAL;
             rtListItem_GetNext(listItem, &listItem);
         }
 
@@ -4422,9 +4423,9 @@ rbusError_t  rbusEvent_Publish(
 
             rbusMessage_Release(msg);
 
-            if(err != RTMESSAGE_BUS_SUCCESS)
+            if(err != RBUSCORE_SUCCESS)
             {
-                if(errOut == RTMESSAGE_BUS_SUCCESS)
+                if(errOut == RBUSCORE_SUCCESS)
                     errOut = err;
                 RBUSLOG_INFO("rbusEvent_Publish failed: rbus_publishSubscriberEvent return error %d", err);
             }
@@ -4433,7 +4434,7 @@ rbusError_t  rbusEvent_Publish(
         rtListItem_GetNext(listItem, &listItem);
     }
 
-    return errOut == RTMESSAGE_BUS_SUCCESS ? RBUS_ERROR_SUCCESS: RBUS_ERROR_BUS_ERROR;
+    return errOut == RBUSCORE_SUCCESS ? RBUS_ERROR_SUCCESS: RBUS_ERROR_BUS_ERROR;
 }
 
 rbusError_t rbusMethod_InvokeInternal(
@@ -4444,7 +4445,7 @@ rbusError_t rbusMethod_InvokeInternal(
     int timeout)
 {
     (void)handle;
-    rbus_error_t err;
+    rbusCoreError_t err;
     int returnCode = RBUS_ERROR_INVALID_INPUT;
     rbusMessage request, response;
     rbusLegacyReturn_t legacyRetCode = RBUS_LEGACY_ERR_FAILURE;
@@ -4466,7 +4467,7 @@ rbusError_t rbusMethod_InvokeInternal(
         METHOD_RPC, 
         request, 
         timeout, 
-        &response)) != RTMESSAGE_BUS_SUCCESS)
+        &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, methodName);
         return rbuscoreError_to_rbusError(err);
@@ -4606,15 +4607,15 @@ rbusError_t rbus_createSession(rbusHandle_t handle, uint32_t *pSessionId)
 {
     (void)handle;
     rbusError_t rc = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage response;
     if (pSessionId && handle)
     {
         *pSessionId = 0;
-        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_REQUEST_SESSION_ID, NULL, rbusConfig_ReadSetTimeout(), &response)) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_REQUEST_SESSION_ID, NULL, rbusConfig_ReadSetTimeout(), &response)) == RBUSCORE_SUCCESS)
         {
             rbusMessage_GetInt32(response, /*MESSAGE_FIELD_RESULT,*/ (int*) &err);
-            if(RTMESSAGE_BUS_SUCCESS != err)
+            if(RBUSCORE_SUCCESS != err)
             {
                 RBUSLOG_ERROR("Session manager reports internal error %d from %s for the object %s", err, handle->componentName, RBUS_SMGR_DESTINATION_NAME);
                 rc = RBUS_ERROR_SESSION_ALREADY_EXIST;
@@ -4643,16 +4644,16 @@ rbusError_t rbus_getCurrentSession(rbusHandle_t handle, uint32_t *pSessionId)
 {
     (void)handle;
     rbusError_t rc = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage response;
 
     if (pSessionId && handle)
     {
         *pSessionId = 0;
-        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_GET_CURRENT_SESSION_ID, NULL, rbusConfig_ReadGetTimeout(), &response)) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_GET_CURRENT_SESSION_ID, NULL, rbusConfig_ReadGetTimeout(), &response)) == RBUSCORE_SUCCESS)
         {
             rbusMessage_GetInt32(response, /*MESSAGE_FIELD_RESULT,*/ (int*) &err);
-            if(RTMESSAGE_BUS_SUCCESS != err)
+            if(RBUSCORE_SUCCESS != err)
             {
                 RBUSLOG_ERROR("Session manager reports internal error %d from %s for the object %s", err, handle->componentName, RBUS_SMGR_DESTINATION_NAME);
                 rc = RBUS_ERROR_SESSION_ALREADY_EXIST;
@@ -4681,7 +4682,7 @@ rbusError_t rbus_closeSession(rbusHandle_t handle, uint32_t sessionId)
 {
     (void)handle;
     rbusError_t rc = RBUS_ERROR_SUCCESS;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     if ((0 != sessionId) && (handle))
     {
@@ -4690,10 +4691,10 @@ rbusError_t rbus_closeSession(rbusHandle_t handle, uint32_t sessionId)
 
         rbusMessage_Init(&inputSession);
         rbusMessage_SetInt32(inputSession, /*MESSAGE_FIELD_PAYLOAD,*/ sessionId);
-        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_END_SESSION, inputSession, rbusConfig_ReadSetTimeout(), &response)) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_invokeRemoteMethod(RBUS_SMGR_DESTINATION_NAME, RBUS_SMGR_METHOD_END_SESSION, inputSession, rbusConfig_ReadSetTimeout(), &response)) == RBUSCORE_SUCCESS)
         {
             rbusMessage_GetInt32(response, /*MESSAGE_FIELD_RESULT,*/ (int*) &err);
-            if(RTMESSAGE_BUS_SUCCESS != err)
+            if(RBUSCORE_SUCCESS != err)
             {
                 RBUSLOG_ERROR("Session manager reports internal error %d from %s for the object %s", err, handle->componentName, RBUS_SMGR_DESTINATION_NAME);
                 rc = RBUS_ERROR_SESSION_ALREADY_EXIST;

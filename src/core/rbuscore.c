@@ -24,8 +24,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "rbus_core.h"
-#include "rbus_logger.h"
+#include "rbuscore.h"
+#include "rbuscore_logger.h"
 #include "rtVector.h"
 #include "rtAdvisory.h"
 #include "rtMemory.h"
@@ -186,22 +186,22 @@ void server_object_destroy(void* p)
     free(obj);
 }
 
-rbus_error_t server_object_subscription_handler(server_object_t obj, const char * event, char const* subscriber, int added, rbusMessage payload)
+rbusCoreError_t server_object_subscription_handler(server_object_t obj, const char * event, char const* subscriber, int added, rbusMessage payload)
 {
-    rbus_error_t ret;
+    rbusCoreError_t ret;
 
     if((NULL == event) || (NULL == subscriber) ||
        (MAX_SUBSCRIBER_NAME_LENGTH <= strlen(subscriber)) || 
        (MAX_EVENT_NAME_LENGTH <= strlen(event)))
     {
         RBUSCORELOG_ERROR("Cannot %s subscriber %s to event %s. Length exceeds limits.", added ? "add":"remove", subscriber, event);
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     
     if(obj->subscribe_handler_override)
     {
-        ret = (rbus_error_t)obj->subscribe_handler_override(obj->name, event, subscriber, added, payload, obj->subscribe_handler_data);
-        if(ret != RTMESSAGE_BUS_SUBSCRIBE_NOT_HANDLED)
+        ret = (rbusCoreError_t)obj->subscribe_handler_override(obj->name, event, subscriber, added, payload, obj->subscribe_handler_data);
+        if(ret != RBUSCORE_ERROR_SUBSCRIBE_NOT_HANDLED)
             return ret;
     }
 
@@ -217,12 +217,12 @@ rbus_error_t server_object_subscription_handler(server_object_t obj, const char 
         {
             server_event_removeListener(server_event, subscriber);
         }
-        return RTMESSAGE_BUS_SUCCESS;
+        return RBUSCORE_SUCCESS;
     }
     else
     {
         RBUSCORELOG_ERROR("Object %s doesn't support event %s. Cannot %s listener.", obj->name, event, added ? "add":"remove");
-        return RTMESSAGE_BUS_ERROR_UNSUPPORTED_EVENT;
+        return RBUSCORE_ERROR_UNSUPPORTED_EVENT;
     }
 }
 
@@ -323,7 +323,7 @@ static int unlock()
 	return pthread_mutex_unlock(&g_mutex);
 }
 
-static rbus_error_t send_subscription_request(const char * object_name, const char * event_name, bool activate, const rbusMessage payload, int* providerError, int timeout);
+static rbusCoreError_t send_subscription_request(const char * object_name, const char * event_name, bool activate, const rbusMessage payload, int* providerError, int timeout);
 
 static void perform_init()
 {
@@ -366,12 +366,12 @@ static void perform_cleanup()
     unlock();
 }
 
-rbus_error_t set_message_method(rbusMessage msg, const char *method)
+rbusCoreError_t set_message_method(rbusMessage msg, const char *method)
 {
     rbusMessage_BeginMetaSectionWrite(msg);
     rbusMessage_SetString(msg, method);
     rbusMessage_EndMetaSectionWrite(msg);
-	  return RTMESSAGE_BUS_SUCCESS;
+	  return RBUSCORE_SUCCESS;
 }
 
 static server_object_t get_object(const char * object_name)
@@ -379,12 +379,12 @@ static server_object_t get_object(const char * object_name)
     return rtVector_Find(g_server_objects, object_name, server_object_compare);
 }
 
-static rbus_error_t translate_rt_error(rtError err)
+static rbusCoreError_t translate_rt_error(rtError err)
 {
     if(RT_OK == err)
-        return RTMESSAGE_BUS_SUCCESS;
+        return RBUSCORE_SUCCESS;
     else
-        return RTMESSAGE_BUS_ERROR_GENERAL;
+        return RBUSCORE_ERROR_GENERAL;
 }
 
 static void dispatch_method_call(rbusMessage msg, const rtMessageHeader *hdr, server_object_t obj)
@@ -412,7 +412,7 @@ static void dispatch_method_call(rbusMessage msg, const rtMessageHeader *hdr, se
     if(false == handler_invoked)
     {
         unlock();
-        if(obj->callback(hdr->topic, method_name, msg, obj->data, &response, hdr) == RTMESSAGE_BUS_SUCCESS_ASYNC) //FIXME: potential for race
+        if(obj->callback(hdr->topic, method_name, msg, obj->data, &response, hdr) == RBUSCORE_SUCCESS_ASYNC) //FIXME: potential for race
             return;/*provider will send response async later on*/
     }
     
@@ -496,12 +496,12 @@ static void configure_router_address()
     }
 }
 
-rbus_error_t rbus_openBrokerConnection(const char * component_name)
+rbusCoreError_t rbus_openBrokerConnection(const char * component_name)
 {
-    if(RBUSCORE_DISABLED == rbuscore_checkBusStatus)
+    if(RBUSCORE_DISABLED == rbuscore_checkBusStatus())
     {
         RBUSCORELOG_ERROR("RBUS is disabled");
-        return RTMESSAGE_BUS_ERROR_GENERAL;
+        return RBUSCORE_ERROR_GENERAL;
     }
     else
     {
@@ -509,9 +509,9 @@ rbus_error_t rbus_openBrokerConnection(const char * component_name)
     }
 }
 
-rbus_error_t rbus_openBrokerConnection2(const char * component_name, const char* broker_address)
+rbusCoreError_t rbus_openBrokerConnection2(const char * component_name, const char* broker_address)
 {
-	rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+	rbusCoreError_t ret = RBUSCORE_SUCCESS;
 	rtError result = RT_OK;
 	char *pTempBuff = NULL;
 	int length = 0;
@@ -519,7 +519,7 @@ rbus_error_t rbus_openBrokerConnection2(const char * component_name, const char*
 	if(!component_name)
 	{
 		RBUSCORELOG_ERROR("Invalid parameter: component name null");
-		return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+		return RBUSCORE_ERROR_INVALID_PARAM;
 	}
 
 	/*TODO we really need a 1 call per process init function to initialize the global variables
@@ -540,7 +540,7 @@ rbus_error_t rbus_openBrokerConnection2(const char * component_name, const char*
 	{
 		RBUSCORELOG_DEBUG("using previously opened connection for %s", component_name);
 		unlock();
-		return RTMESSAGE_BUS_SUCCESS;
+		return RBUSCORE_SUCCESS;
 	}
 
 	/*nobody calls rbus_openBrokerConnection2 directly (except maybe some unit tests) so broker_address is always NULL*/
@@ -566,7 +566,7 @@ rbus_error_t rbus_openBrokerConnection2(const char * component_name, const char*
 		perform_cleanup();
 		free (pTempBuff);
 		unlock();
-		return RTMESSAGE_BUS_ERROR_GENERAL;
+		return RBUSCORE_ERROR_GENERAL;
 	}
 
 	RBUSCORELOG_DEBUG("Successfully created connection for %s", component_name );
@@ -575,21 +575,21 @@ rbus_error_t rbus_openBrokerConnection2(const char * component_name, const char*
 	return ret;
 }
 
-rbus_error_t rbus_closeBrokerConnection()
+rbusCoreError_t rbus_closeBrokerConnection()
 {
     rtError err = RT_OK;
     lock();
     if(NULL == g_connection)
     {
         RBUSCORELOG_INFO("No connection exist to close.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
     perform_cleanup();
     err = rtConnection_Destroy(g_connection);
     if(RT_OK != err)
     {
         RBUSCORELOG_ERROR("Could not destroy connection. Error: 0x%x.", err);
-        return RTMESSAGE_BUS_ERROR_GENERAL;
+        return RBUSCORE_ERROR_GENERAL;
     }
     g_connection = NULL;
     unlock();
@@ -598,7 +598,7 @@ rbus_error_t rbus_closeBrokerConnection()
     g_mutex_init = 0;
 
     RBUSCORELOG_INFO("Destroyed connection.");
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
 rtConnection rbus_getConnection()
@@ -606,14 +606,14 @@ rtConnection rbus_getConnection()
     return g_connection;
 }
 
-static rbus_error_t send_subscription_request(const char * object_name, const char * event_name, bool activate, const rbusMessage payload, int* providerError, int timeout_ms)
+static rbusCoreError_t send_subscription_request(const char * object_name, const char * event_name, bool activate, const rbusMessage payload, int* providerError, int timeout_ms)
 {
     /* Method definition to add new event subscription: 
      * method name: METHOD_ADD_EVENT_SUBSCRIPTION / METHOD_REMOVE_EVENT_SUBSCRIPTION.
      * argument 1: event_name, mapped to key MESSAGE_FIELD_PAYLOAD 
      * Expected resut:
      * integer, mapped to key MESSAGE_FIELD_RESULT. 0 is success. Anything else is a failure. */
-    rbus_error_t ret;
+    rbusCoreError_t ret;
 
     rbusMessage request, response;
     rbusMessage_Init(&request);
@@ -628,25 +628,25 @@ static rbus_error_t send_subscription_request(const char * object_name, const ch
         timeout_ms = TIMEOUT_VALUE_FIRE_AND_FORGET;
     ret = rbus_invokeRemoteMethod(object_name, (activate? METHOD_ADD_EVENT_SUBSCRIPTION : METHOD_REMOVE_EVENT_SUBSCRIPTION),
             request, timeout_ms, &response);
-    if(RTMESSAGE_BUS_SUCCESS == ret)
+    if(RBUSCORE_SUCCESS == ret)
     {
         rtError extract_ret;
         int result;
         extract_ret = rbusMessage_GetInt32(response, &result);
         if(RT_OK == extract_ret)
         {
-            if(RTMESSAGE_BUS_SUCCESS == result)
+            if(RBUSCORE_SUCCESS == result)
             {
                 /*Event registration was successful.*/
                 RBUSCORELOG_INFO("Subscription for %s::%s is now %s.", object_name, event_name, (activate? "active" : "cancelled"));
-                ret = RTMESSAGE_BUS_SUCCESS;
+                ret = RBUSCORE_SUCCESS;
             }
             else
             {
                 /*For some reason, event publisher couldnt' handle the request.*/
                 //TODO: Expand to troubleshoot causes of a failed subscription.
                 RBUSCORELOG_ERROR("Error %s subscription for %s::%s. Server returned error %d.", (activate? "adding" : "removing"), object_name, event_name, result);
-                ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                ret = RBUSCORE_ERROR_GENERAL;
                 if(providerError)
                     *providerError = result;
             }
@@ -654,25 +654,25 @@ static rbus_error_t send_subscription_request(const char * object_name, const ch
         else
         {
             RBUSCORELOG_ERROR("Error adding subscription for %s::%s. Received unexpected response.", object_name, event_name);
-            ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+            ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
         }
         rbusMessage_Release(response);
     }
-    else if(RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE == ret)
+    else if(RBUSCORE_ERROR_DESTINATION_UNREACHABLE == ret)
     {
         RBUSCORELOG_DEBUG("Error %s subscription for %s::%s. Provider not found. %d", (activate? "adding" : "removing"), object_name, event_name, ret);
-        //keep ret as RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE
+        //keep ret as RBUSCORE_ERROR_DESTINATION_UNREACHABLE
     }
     else
     {
         RBUSCORELOG_ERROR("Error %s subscription for %s::%s. Communication issues. %d", (activate? "adding" : "removing"), object_name, event_name, ret);
-        ret = RTMESSAGE_BUS_ERROR_REMOTE_END_FAILED_TO_RESPOND;
+        ret = RBUSCORE_ERROR_REMOTE_END_FAILED_TO_RESPOND;
     }
 
     return ret;
 }
 
-rbus_error_t rbus_registerObj(const char * object_name, rbus_callback_t handler, void * user_data)
+rbusCoreError_t rbus_registerObj(const char * object_name, rbus_callback_t handler, void * user_data)
 {
     rtError err = RT_OK;
     server_object_t obj = NULL;
@@ -680,20 +680,20 @@ rbus_error_t rbus_registerObj(const char * object_name, rbus_callback_t handler,
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected. Cannot register objects yet.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if(NULL == object_name)
     {
         RBUSCORELOG_ERROR("Object name is NULL");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     int object_name_len = strlen(object_name);
     if((MAX_OBJECT_NAME_LENGTH <= object_name_len) || (0 == object_name_len))
     {
         RBUSCORELOG_ERROR("object_name name is too long/short.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     lock();
@@ -702,7 +702,7 @@ rbus_error_t rbus_registerObj(const char * object_name, rbus_callback_t handler,
     if(obj)
     {
         RBUSCORELOG_ERROR("%s is already registered. Rejecting duplicate registration.", object_name);
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     server_object_create(&obj, object_name, handler, user_data);
@@ -723,22 +723,22 @@ rbus_error_t rbus_registerObj(const char * object_name, rbus_callback_t handler,
         {
             RBUSCORELOG_WARN("Number of registered objects is %lu", sz);
         }
-        return RTMESSAGE_BUS_SUCCESS;
+        return RBUSCORE_SUCCESS;
     }
     else
     {
         RBUSCORELOG_ERROR("Failed to register object. Error: 0x%x", err);
         server_object_destroy(obj);
-        return RTMESSAGE_BUS_ERROR_GENERAL;
+        return RBUSCORE_ERROR_GENERAL;
     }
 }
 
-rbus_error_t rbus_registerMethod(const char * object_name, const char *method_name, rbus_callback_t handler, void * user_data)
+rbusCoreError_t rbus_registerMethod(const char * object_name, const char *method_name, rbus_callback_t handler, void * user_data)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     if(MAX_METHOD_NAME_LENGTH <= strlen(method_name))
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
 
     lock();
     //TODO: Check that method name length is within limits and search for duplicates
@@ -748,7 +748,7 @@ rbus_error_t rbus_registerMethod(const char * object_name, const char *method_na
         if(MAX_SUPPORTED_METHODS <= rtVector_Size(obj->methods))
         {
             RBUSCORELOG_ERROR("Too many methods registered with object %s. Cannot register more.", object_name);
-            ret = RTMESSAGE_BUS_ERROR_OUT_OF_RESOURCES;
+            ret = RBUSCORE_ERROR_OUT_OF_RESOURCES;
         }
         else
         {
@@ -758,7 +758,7 @@ rbus_error_t rbus_registerMethod(const char * object_name, const char *method_na
             {
                unlock();
                RBUSCORELOG_ERROR("Method %s is already registered,Rejecting duplicate registration.", method_name);
-               return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+               return RBUSCORE_ERROR_INVALID_PARAM;
             }
             else
             {
@@ -771,17 +771,17 @@ rbus_error_t rbus_registerMethod(const char * object_name, const char *method_na
     else
     {
         RBUSCORELOG_ERROR("Couldn't locate object %s.", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
     return ret;
 }
 
 
-rbus_error_t rbus_unregisterMethod(const char * object_name, const char *method_name)
+rbusCoreError_t rbus_unregisterMethod(const char * object_name, const char *method_name)
 {
     /*using namespace rbus_server;*/
-	rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+	rbusCoreError_t ret = RBUSCORE_SUCCESS;
 	lock();
 
     server_object_t obj = get_object(object_name);
@@ -796,30 +796,30 @@ rbus_error_t rbus_unregisterMethod(const char * object_name, const char *method_
         else
         {
             RBUSCORELOG_ERROR("Couldn't find a method %s registered with object %s.", method_name, object_name);
-            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+            ret = RBUSCORE_ERROR_GENERAL;
         }
     }
     else	
     {
         RBUSCORELOG_ERROR("Couldn't locate object %s.", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
     return ret;
 }
 
-rbus_error_t rbus_addElementEvent(const char * object_name, const char* event)
+rbusCoreError_t rbus_addElementEvent(const char * object_name, const char* event)
 {
     return rbus_addElement(object_name, event);
 }
 
-rbus_error_t rbus_registerMethodTable(const char * object_name, rbus_method_table_entry_t *table, unsigned int num_entries)
+rbusCoreError_t rbus_registerMethodTable(const char * object_name, rbus_method_table_entry_t *table, unsigned int num_entries)
 {
-    rbus_error_t ret= RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret= RBUSCORE_SUCCESS;
     RBUSCORELOG_INFO("Registering method table for object %s", object_name);
     for(unsigned int i = 0; i < num_entries; i++)
     {
-        if((ret = rbus_registerMethod(object_name, table[i].method, table[i].callback, table[i].user_data)) != RTMESSAGE_BUS_SUCCESS)
+        if((ret = rbus_registerMethod(object_name, table[i].method, table[i].callback, table[i].user_data)) != RBUSCORE_SUCCESS)
         {
             RBUSCORELOG_ERROR("Failed to register table with object %s. Method: %s. Aborting remaining method registrations.", object_name, table[i].method);
             break;
@@ -828,13 +828,13 @@ rbus_error_t rbus_registerMethodTable(const char * object_name, rbus_method_tabl
     return ret;
 }
 
-rbus_error_t rbus_unregisterMethodTable(const char * object_name, rbus_method_table_entry_t *table, unsigned int num_entries)
+rbusCoreError_t rbus_unregisterMethodTable(const char * object_name, rbus_method_table_entry_t *table, unsigned int num_entries)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     RBUSCORELOG_INFO("Unregistering method table for object %s", object_name);
     for(unsigned int i = 0; i < num_entries; i++)
     {
-        if((ret = rbus_unregisterMethod(object_name, table[i].method)) != RTMESSAGE_BUS_SUCCESS)
+        if((ret = rbus_unregisterMethod(object_name, table[i].method)) != RBUSCORE_SUCCESS)
         {
             RBUSCORELOG_ERROR("Failed to unregister table with object %s. Method: %s. Aborting remaining method unregistrations.", object_name, table[i].method);
             break;
@@ -843,22 +843,22 @@ rbus_error_t rbus_unregisterMethodTable(const char * object_name, rbus_method_ta
     return ret;
 }
 
-rbus_error_t rbus_unregisterObj(const char * object_name)
+rbusCoreError_t rbus_unregisterObj(const char * object_name)
 {
     /*using namespace rbus_server;*/
     rtError err = RT_OK;
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     if((NULL == object_name) || ('\0' == object_name[0]) || (MAX_OBJECT_NAME_LENGTH <= strlen(object_name)))
     {
         RBUSCORELOG_ERROR("object_name is invalid.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     err = rtConnection_RemoveListener(g_connection, object_name);
     if(RT_OK != err)
     {
         RBUSCORELOG_ERROR("rtConnection_RemoveListener %s failed: Err=%d", object_name, err);
-        return RTMESSAGE_BUS_ERROR_GENERAL;
+        return RBUSCORE_ERROR_GENERAL;
     }
 
     lock();
@@ -871,27 +871,27 @@ rbus_error_t rbus_unregisterObj(const char * object_name)
     else
     {
         RBUSCORELOG_ERROR("No matching entry for object %s.", object_name);
-        ret = RTMESSAGE_BUS_ERROR_GENERAL;
+        ret = RBUSCORE_ERROR_GENERAL;
     }
     unlock();
 
     return ret;
 }
 
-rbus_error_t rbus_addElement(const char * object_name, const char * element)
+rbusCoreError_t rbus_addElement(const char * object_name, const char * element)
 {
     rtError err = RT_OK;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if((NULL == object_name) || (NULL == element))
     {
         RBUSCORELOG_ERROR("Object/element name is NULL");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     int object_name_len = strlen(object_name);
@@ -900,7 +900,7 @@ rbus_error_t rbus_addElement(const char * object_name, const char * element)
             (MAX_OBJECT_NAME_LENGTH <= element_name_len) || (0 == element_name_len))
     {
         RBUSCORELOG_ERROR("object/element name is too long/short.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     err = rtConnection_AddAlias(g_connection, object_name, element);
@@ -908,27 +908,27 @@ rbus_error_t rbus_addElement(const char * object_name, const char * element)
     {
         RBUSCORELOG_ERROR("Failed to add element. Error: 0x%x", err);
         if (RT_ERROR_DUPLICATE_ENTRY == err)
-            return RTMESSAGE_BUS_ERROR_DUPLICATE_ENTRY;
+            return RBUSCORE_ERROR_DUPLICATE_ENTRY;
         else
-            return RTMESSAGE_BUS_ERROR_GENERAL;
+            return RBUSCORE_ERROR_GENERAL;
     }
 
     RBUSCORELOG_DEBUG("Added alias %s for object %s.", element, object_name);
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
-rbus_error_t rbus_removeElement(const char * object, const char * element)
+rbusCoreError_t rbus_removeElement(const char * object, const char * element)
 {
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if((NULL == object) || (NULL == element))
     {
         RBUSCORELOG_ERROR("Object/element name is NULL");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     int object_name_len = strlen(object);
@@ -937,35 +937,35 @@ rbus_error_t rbus_removeElement(const char * object, const char * element)
             (MAX_OBJECT_NAME_LENGTH <= element_name_len) || (0 == element_name_len))
     {
         RBUSCORELOG_ERROR("object/element name is too long/short.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     rtError err = rtConnection_RemoveAlias(g_connection, object, element);
     if(RT_OK != err)
-        return RTMESSAGE_BUS_ERROR_GENERAL;
-    return RTMESSAGE_BUS_SUCCESS;
+        return RBUSCORE_ERROR_GENERAL;
+    return RBUSCORE_SUCCESS;
 }
 
-rbus_error_t rbus_pushObj(const char * object_name, rbusMessage message, int timeout_millisecs)
+rbusCoreError_t rbus_pushObj(const char * object_name, rbusMessage message, int timeout_millisecs)
 {
     rtError err = RT_OK;
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rbusMessage response = NULL;
-    if((ret = rbus_invokeRemoteMethod(object_name, METHOD_SETPARAMETERVALUES, message, timeout_millisecs, &response)) != RTMESSAGE_BUS_SUCCESS)
+    if((ret = rbus_invokeRemoteMethod(object_name, METHOD_SETPARAMETERVALUES, message, timeout_millisecs, &response)) != RBUSCORE_SUCCESS)
     {
         RBUSCORELOG_ERROR("Failed to send message. Error code: 0x%x", err);
         return ret;
     }
     else
     {
-        int result = RTMESSAGE_BUS_SUCCESS;
+        int result = RBUSCORE_SUCCESS;
         if((err = rbusMessage_GetInt32(response, &result) == RT_OK))
         {
-            ret = (rbus_error_t)result;
+            ret = (rbusCoreError_t)result;
         }
         else
         {
-            RBUSCORELOG_ERROR("%s.", stringify(RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE));
-            ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+            RBUSCORELOG_ERROR("%s.", stringify(RBUSCORE_ERROR_MALFORMED_RESPONSE));
+            ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
         }
         rbusMessage_Release(response);
     }
@@ -994,21 +994,21 @@ static rtError rbus_sendRequest(rtConnection con, rbusMessage req, char const* t
     return err;
 }
 
-rbus_error_t rbus_invokeRemoteMethod(const char * object_name, const char *method, rbusMessage out, int timeout_millisecs, rbusMessage *in)
+rbusCoreError_t rbus_invokeRemoteMethod(const char * object_name, const char *method, rbusMessage out, int timeout_millisecs, rbusMessage *in)
 {
     rtError err = RT_OK;
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if(MAX_OBJECT_NAME_LENGTH <= strnlen(object_name, MAX_OBJECT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Object name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     *in = NULL;
@@ -1022,17 +1022,17 @@ rbus_error_t rbus_invokeRemoteMethod(const char * object_name, const char *metho
         if(RT_OBJECT_NO_LONGER_AVAILABLE == err)
         {
             RBUSCORELOG_DEBUG("Cannot reach object %s.", object_name);
-            ret = RTMESSAGE_BUS_ERROR_DESTINATION_UNREACHABLE;
+            ret = RBUSCORE_ERROR_DESTINATION_UNREACHABLE;
         }
         else if(RT_ERROR_TIMEOUT == err)
         {
             RBUSCORELOG_ERROR("Request timed out. Error code: 0x%x", err);
-            ret = RTMESSAGE_BUS_ERROR_REMOTE_TIMED_OUT;
+            ret = RBUSCORE_ERROR_REMOTE_TIMED_OUT;
         }
         else
         {
             RBUSCORELOG_ERROR("Failed to send message. Error code: 0x%x", err);
-            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+            ret = RBUSCORE_ERROR_GENERAL;
         }
     }
     else
@@ -1046,19 +1046,19 @@ rbus_error_t rbus_invokeRemoteMethod(const char * object_name, const char *metho
         {
             if(0 != strncmp(METHOD_RESPONSE, method, MAX_METHOD_NAME_LENGTH))
             {
-                RBUSCORELOG_ERROR("%s.", stringify(RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE));
-                ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+                RBUSCORELOG_ERROR("%s.", stringify(RBUSCORE_ERROR_MALFORMED_RESPONSE));
+                ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
             }
         }
         else
         {
-            RBUSCORELOG_ERROR("%s.", stringify(RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE));
-            ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+            RBUSCORELOG_ERROR("%s.", stringify(RBUSCORE_ERROR_MALFORMED_RESPONSE));
+            ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
         }
     }
 
     rbusMessage_Release(out);
-    if((RTMESSAGE_BUS_SUCCESS != ret) && (NULL != *in))
+    if((RBUSCORE_SUCCESS != ret) && (NULL != *in))
     {
         rbusMessage_Release(*in);
         *in = NULL;
@@ -1068,32 +1068,32 @@ rbus_error_t rbus_invokeRemoteMethod(const char * object_name, const char *metho
 
 
 /*TODO: make this really fire and forget.*/
-rbus_error_t rbus_pushObjNoAck(const char * object_name, rbusMessage message)
+rbusCoreError_t rbus_pushObjNoAck(const char * object_name, rbusMessage message)
 {
 	return rbus_pushObj(object_name, message, TIMEOUT_VALUE_FIRE_AND_FORGET);
 }
 
-rbus_error_t rbus_pullObj(const char * object_name, int timeout_millisecs, rbusMessage *response)
+rbusCoreError_t rbus_pullObj(const char * object_name, int timeout_millisecs, rbusMessage *response)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtError err = RT_OK;
-    if((ret = rbus_invokeRemoteMethod(object_name, METHOD_GETPARAMETERVALUES, NULL, timeout_millisecs, response)) != RTMESSAGE_BUS_SUCCESS)
+    if((ret = rbus_invokeRemoteMethod(object_name, METHOD_GETPARAMETERVALUES, NULL, timeout_millisecs, response)) != RBUSCORE_SUCCESS)
     {
         RBUSCORELOG_ERROR("Failed to send message. Error code: 0x%x", ret);
     }
     else
     {
-        int result = RTMESSAGE_BUS_SUCCESS;
+        int result = RBUSCORE_SUCCESS;
         if((err = rbusMessage_GetInt32(*response, &result) == RT_OK))
         {
-            ret = (rbus_error_t)result;
+            ret = (rbusCoreError_t)result;
         }
         else
         {
-            RBUSCORELOG_ERROR("%s.", stringify(RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE));
-            ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+            RBUSCORELOG_ERROR("%s.", stringify(RBUSCORE_ERROR_MALFORMED_RESPONSE));
+            ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
         }
-        if(RTMESSAGE_BUS_SUCCESS != ret) 
+        if(RBUSCORE_SUCCESS != ret) 
         {
             rbusMessage_Release(*response);
             *response = NULL;
@@ -1102,7 +1102,7 @@ rbus_error_t rbus_pullObj(const char * object_name, int timeout_millisecs, rbusM
     return ret;
 }
 
-static rbus_error_t rbus_sendMessage(rbusMessage msg, const char * destination, const char * sender)
+static rbusCoreError_t rbus_sendMessage(rbusMessage msg, const char * destination, const char * sender)
 {
     rtError ret;
     uint8_t* data = NULL;
@@ -1111,7 +1111,7 @@ static rbus_error_t rbus_sendMessage(rbusMessage msg, const char * destination, 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     rbusMessage_ToBytes(msg, &data, &dataLength);
@@ -1141,7 +1141,7 @@ static int subscription_handler(const char *not_used, const char * method_name, 
         if((NULL == sender) || (NULL == event_name))
         {
             RBUSCORELOG_ERROR("Malformed subscription request. Sender: %s. Event: %s.", sender, event_name);
-            rbusMessage_SetInt32(*out, RTMESSAGE_BUS_ERROR_INVALID_PARAM);
+            rbusMessage_SetInt32(*out, RBUSCORE_ERROR_INVALID_PARAM);
         }
         else
         {
@@ -1149,7 +1149,7 @@ static int subscription_handler(const char *not_used, const char * method_name, 
             if(has_payload)
                 rbusMessage_GetMessage(in, &payload);
             int added = strncmp(method_name, METHOD_ADD_EVENT_SUBSCRIPTION, MAX_METHOD_NAME_LENGTH) == 0 ? 1 : 0;
-            rbus_error_t ret = server_object_subscription_handler(obj, event_name, sender, added, payload);
+            rbusCoreError_t ret = server_object_subscription_handler(obj, event_name, sender, added, payload);
             if(payload)
                 rbusMessage_Release(payload);
             rbusMessage_SetInt32(*out, ret);
@@ -1196,9 +1196,9 @@ static void rtrouted_advisory_callback(rtMessageHeader const* hdr, uint8_t const
     return;
 }
 
-static rbus_error_t install_subscription_handlers(server_object_t object)
+static rbusCoreError_t install_subscription_handlers(server_object_t object)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS; 
+    rbusCoreError_t ret = RBUSCORE_SUCCESS; 
 
     server_method_t method = rtVector_Find(object->methods, METHOD_ADD_EVENT_SUBSCRIPTION, server_method_compare);
 
@@ -1210,13 +1210,13 @@ static rbus_error_t install_subscription_handlers(server_object_t object)
 
     /*No subscription handlers present. Add them.*/
     RBUSCORELOG_DEBUG("Adding handler for subscription requests for %s.", object->name);
-    if((ret = rbus_registerMethod(object->name, METHOD_ADD_EVENT_SUBSCRIPTION, subscription_handler, object)) != RTMESSAGE_BUS_SUCCESS)
+    if((ret = rbus_registerMethod(object->name, METHOD_ADD_EVENT_SUBSCRIPTION, subscription_handler, object)) != RBUSCORE_SUCCESS)
     {
         RBUSCORELOG_ERROR("Could not register add_subscription_handler.");
     }
     else
     {
-        if((ret = rbus_registerMethod(object->name, METHOD_REMOVE_EVENT_SUBSCRIPTION, subscription_handler, object)) != RTMESSAGE_BUS_SUCCESS)
+        if((ret = rbus_registerMethod(object->name, METHOD_REMOVE_EVENT_SUBSCRIPTION, subscription_handler, object)) != RBUSCORE_SUCCESS)
         {
             RBUSCORELOG_ERROR("Could not register remove_subscription_handler.");
         }
@@ -1229,16 +1229,16 @@ static rbus_error_t install_subscription_handlers(server_object_t object)
     return ret;
 }
 
-rbus_error_t rbus_registerEvent(const char* object_name, const char * event_name, rbus_event_subscribe_callback_t callback, void * user_data)
+rbusCoreError_t rbus_registerEvent(const char* object_name, const char * event_name, rbus_event_subscribe_callback_t callback, void * user_data)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     server_object_t obj;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if(NULL == event_name)
@@ -1246,12 +1246,12 @@ rbus_error_t rbus_registerEvent(const char* object_name, const char * event_name
     if(NULL == object_name)
     {
         RBUSCORELOG_ERROR("Invalid parameter(s)");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     if(MAX_EVENT_NAME_LENGTH <= strnlen(event_name, MAX_EVENT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Event name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     lock();
@@ -1276,16 +1276,16 @@ rbus_error_t rbus_registerEvent(const char* object_name, const char * event_name
     else
     {
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
     return ret;
 }
 
-rbus_error_t rbus_unregisterEvent(const char* object_name, const char * event_name)
+rbusCoreError_t rbus_unregisterEvent(const char* object_name, const char * event_name)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     if(NULL == event_name)
         event_name = DEFAULT_EVENT;
 
@@ -1305,14 +1305,14 @@ rbus_error_t rbus_unregisterEvent(const char* object_name, const char * event_na
         else
         {
             RBUSCORELOG_INFO("Event %s could not be found in subscription table of object %s.", event_name, object_name);
-            ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+            ret = RBUSCORE_ERROR_INVALID_PARAM;
         }
     }
     else
     {
     
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
     return ret;
@@ -1357,7 +1357,7 @@ static void master_event_callback(rtMessageHeader const* hdr, uint8_t const* dat
         if(g_master_event_callback)
         {
             err = g_master_event_callback(sender, event_name, msg, g_master_event_user_data);
-            if(err != RTMESSAGE_BUS_EVENT_NOT_HANDLED)
+            if(err != RBUSCORE_ERROR_EVENT_NOT_HANDLED)
             {
                 rbusMessage_Release(msg);
                 return;
@@ -1397,11 +1397,11 @@ static void master_event_callback(rtMessageHeader const* hdr, uint8_t const* dat
     return;
 }
 
-static rbus_error_t remove_subscription_callback(const char * object_name,  const char * event_name)
+static rbusCoreError_t remove_subscription_callback(const char * object_name,  const char * event_name)
 {
     /*using namespace rbus_client;*/
     client_subscription_t sub;
-    rbus_error_t ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+    rbusCoreError_t ret = RBUSCORE_ERROR_INVALID_PARAM;
 
     lock();
     sub = rtVector_Find(g_event_subscriptions_for_client, object_name, client_subscription_compare);
@@ -1412,7 +1412,7 @@ static rbus_error_t remove_subscription_callback(const char * object_name,  cons
         {
             rtVector_RemoveItem(sub->events, evt, rtVector_Cleanup_Free);
             RBUSCORELOG_DEBUG("Subscription removed for event %s::%s.", object_name, event_name);
-            ret = RTMESSAGE_BUS_SUCCESS;
+            ret = RBUSCORE_SUCCESS;
 
             if(rtVector_Size(sub->events) == 0)
             {
@@ -1429,10 +1429,10 @@ static rbus_error_t remove_subscription_callback(const char * object_name,  cons
     return ret;
 }
 
-static rbus_error_t rbus_subscribeToEventInternal(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError, int timeout)
+static rbusCoreError_t rbus_subscribeToEventInternal(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError, int timeout)
 {
     /*using namespace rbus_client;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     client_subscription_t sub;
     client_event_t evt;
 
@@ -1443,23 +1443,23 @@ static rbus_error_t rbus_subscribeToEventInternal(const char * object_name,  con
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if((NULL == object_name) || (NULL == callback))
     {
         RBUSCORELOG_ERROR("Invalid parameter(s)");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     if(MAX_OBJECT_NAME_LENGTH <= strnlen(object_name, MAX_OBJECT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Object name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     if(MAX_EVENT_NAME_LENGTH <= strnlen(event_name, MAX_EVENT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Event name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     lock();
@@ -1484,7 +1484,7 @@ static rbus_error_t rbus_subscribeToEventInternal(const char * object_name,  con
                 /*sub already exist and event already registered so do nothing*/
                 RBUSCORELOG_WARN("Subscription exists for event %s::%s.", object_name, event_name);
                 unlock();
-                return RTMESSAGE_BUS_SUCCESS;
+                return RBUSCORE_SUCCESS;
             }
         }
         else
@@ -1502,7 +1502,7 @@ static rbus_error_t rbus_subscribeToEventInternal(const char * object_name,  con
 
     unlock();
 
-    if((ret = send_subscription_request(object_name, event_name, true, payload, providerError, timeout)) != RTMESSAGE_BUS_SUCCESS)
+    if((ret = send_subscription_request(object_name, event_name, true, payload, providerError, timeout)) != RBUSCORE_SUCCESS)
     {
         if(g_master_event_callback == NULL)
         {
@@ -1515,19 +1515,19 @@ static rbus_error_t rbus_subscribeToEventInternal(const char * object_name,  con
     return ret;
 }
 
-rbus_error_t rbus_subscribeToEvent(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError)
+rbusCoreError_t rbus_subscribeToEvent(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError)
 {
     return rbus_subscribeToEventInternal(object_name, event_name, callback, payload, user_data, providerError, 0);
 }
 
-rbus_error_t rbus_subscribeToEventTimeout(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError, int timeout)
+rbusCoreError_t rbus_subscribeToEventTimeout(const char * object_name,  const char * event_name, rbus_event_callback_t callback, const rbusMessage payload, void * user_data, int* providerError, int timeout)
 {
     return rbus_subscribeToEventInternal(object_name, event_name, callback, payload, user_data, providerError, timeout);
 }
 
-rbus_error_t rbus_unsubscribeFromEvent(const char * object_name,  const char * event_name, const rbusMessage payload)
+rbusCoreError_t rbus_unsubscribeFromEvent(const char * object_name,  const char * event_name, const rbusMessage payload)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+    rbusCoreError_t ret = RBUSCORE_ERROR_INVALID_PARAM;
 
     /* support rbus events being elements */
     if(object_name == NULL && event_name != NULL) 
@@ -1541,7 +1541,7 @@ rbus_error_t rbus_unsubscribeFromEvent(const char * object_name,  const char * e
     if(MAX_OBJECT_NAME_LENGTH <= strnlen(object_name, MAX_OBJECT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Object name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     if(NULL == event_name)
         event_name = DEFAULT_EVENT;
@@ -1552,15 +1552,15 @@ rbus_error_t rbus_unsubscribeFromEvent(const char * object_name,  const char * e
     return ret;
 }
 
-rbus_error_t rbus_publishEvent(const char* object_name,  const char * event_name, rbusMessage out)
+rbusCoreError_t rbus_publishEvent(const char* object_name,  const char * event_name, rbusMessage out)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if(NULL == event_name)
@@ -1568,7 +1568,7 @@ rbus_error_t rbus_publishEvent(const char* object_name,  const char * event_name
     if(MAX_OBJECT_NAME_LENGTH <= strnlen(object_name, MAX_OBJECT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Object name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     rbusMessage_BeginMetaSectionWrite(out);
     rbusMessage_SetString(out, event_name);
@@ -1591,7 +1591,7 @@ rbus_error_t rbus_publishEvent(const char* object_name,  const char * event_name
             for(i=0; i < nlistener; ++i)
             {
                 char const* listener = (char const*)rtVector_At(evt->listeners, i);
-                if(RTMESSAGE_BUS_SUCCESS != rbus_sendMessage(out, listener, object_name))
+                if(RBUSCORE_SUCCESS != rbus_sendMessage(out, listener, object_name))
                 {
                     RBUSCORELOG_ERROR("Couldn't send event %s::%s to %s.", object_name, event_name, listener);
                 }
@@ -1600,29 +1600,29 @@ rbus_error_t rbus_publishEvent(const char* object_name,  const char * event_name
         else
         {
             RBUSCORELOG_ERROR("Could not find event %s", event_name);
-            ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+            ret = RBUSCORE_ERROR_INVALID_PARAM;
         }
     }
     else 
     {
         /*Object not present yet. Register it now.*/
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
 
     return ret;
 }
 
-rbus_error_t rbus_registerSubscribeHandler(const char* object_name, rbus_event_subscribe_callback_t callback, void * user_data)
+rbusCoreError_t rbus_registerSubscribeHandler(const char* object_name, rbus_event_subscribe_callback_t callback, void * user_data)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
 
     if((NULL == object_name) || (NULL == callback))
     {
         RBUSCORELOG_ERROR("Invalid parameter(s)");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     lock();
@@ -1637,19 +1637,19 @@ rbus_error_t rbus_registerSubscribeHandler(const char* object_name, rbus_event_s
     else
     {
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
     unlock();
     return ret;
 }
 
-rbus_error_t rbus_registerMasterEventHandler(rbus_event_callback_t callback, void * user_data)
+rbusCoreError_t rbus_registerMasterEventHandler(rbus_event_callback_t callback, void * user_data)
 {
     g_master_event_callback = callback;
     g_master_event_user_data = user_data;
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
-rbus_error_t rbus_registerClientDisconnectHandler(rbus_client_disconnect_callback_t callback)
+rbusCoreError_t rbus_registerClientDisconnectHandler(rbus_client_disconnect_callback_t callback)
 {
     lock();
     if(!g_advisory_listener_installed)
@@ -1663,16 +1663,16 @@ rbus_error_t rbus_registerClientDisconnectHandler(rbus_client_disconnect_callbac
         {
             RBUSCORELOG_ERROR("Failed to add advisory listener: %d", err);
             unlock();
-            return RTMESSAGE_BUS_ERROR_GENERAL;
+            return RBUSCORE_ERROR_GENERAL;
         }
         g_advisory_listener_installed = true;
         g_client_disconnect_callback = callback;
     }
     unlock();
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
-rbus_error_t rbus_unregisterClientDisconnectHandler()
+rbusCoreError_t rbus_unregisterClientDisconnectHandler()
 {
     lock();
     if(g_advisory_listener_installed)
@@ -1681,19 +1681,19 @@ rbus_error_t rbus_unregisterClientDisconnectHandler()
         g_advisory_listener_installed = false;
     }
     unlock();
-    return RTMESSAGE_BUS_SUCCESS;
+    return RBUSCORE_SUCCESS;
 }
 
-rbus_error_t rbus_publishSubscriberEvent(const char* object_name,  const char * event_name, const char* listener, rbusMessage out)
+rbusCoreError_t rbus_publishSubscriberEvent(const char* object_name,  const char * event_name, const char* listener, rbusMessage out)
 {
     /*using namespace rbus_server;*/
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     if(NULL == event_name)
         event_name = DEFAULT_EVENT;
     if(MAX_OBJECT_NAME_LENGTH <= strnlen(object_name, MAX_OBJECT_NAME_LENGTH))
     {
         RBUSCORELOG_ERROR("Object name is too long.");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
     rbusMessage_BeginMetaSectionWrite(out);
     rbusMessage_SetString(out, event_name);
@@ -1706,9 +1706,9 @@ rbus_error_t rbus_publishSubscriberEvent(const char* object_name,  const char * 
     {
         /*Object not present yet. Register it now.*/
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
-        ret = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        ret = RBUSCORE_ERROR_INVALID_PARAM;
     }
-    if(rbus_sendMessage(out, listener, object_name) != RTMESSAGE_BUS_SUCCESS)
+    if(rbus_sendMessage(out, listener, object_name) != RBUSCORE_SUCCESS)
     {
        RBUSCORELOG_ERROR("Couldn't send event %s::%s to %s.", object_name, event_name, listener);
     }
@@ -1716,22 +1716,22 @@ rbus_error_t rbus_publishSubscriberEvent(const char* object_name,  const char * 
     return ret;
 }
 
-rbus_error_t rbus_discoverWildcardDestinations(const char * expression, int * count, char *** destinations)
+rbusCoreError_t rbus_discoverWildcardDestinations(const char * expression, int * count, char *** destinations)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtError err = RT_OK;
     rtMessage msg, rsp;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if((NULL == expression) || (NULL == count) || (NULL == destinations))
     {
         RBUSCORELOG_ERROR("expression/count/destinations pointer is NULL");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     rtMessage_Create(&msg);
@@ -1775,7 +1775,7 @@ rbus_error_t rbus_discoverWildcardDestinations(const char * expression, int * co
                                 free(array_ptr[j]);
                             free(array_ptr);
                             RBUSCORELOG_ERROR("Read/Memory allocation failure");
-                            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                            ret = RBUSCORE_ERROR_GENERAL;
                             break;
                         }
                     }
@@ -1783,44 +1783,44 @@ rbus_error_t rbus_discoverWildcardDestinations(const char * expression, int * co
                 else
                 {
                     RBUSCORELOG_ERROR("Memory allocation failure");
-                    ret = RTMESSAGE_BUS_ERROR_INSUFFICIENT_MEMORY;
+                    ret = RBUSCORE_ERROR_INSUFFICIENT_MEMORY;
                 }
             }
 
             rtMessage_Release(msg);
 
-            ret = RTMESSAGE_BUS_SUCCESS;
+            ret = RBUSCORE_SUCCESS;
 
         }
         else
         {
-            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+            ret = RBUSCORE_ERROR_GENERAL;
             rtMessage_Release(msg);
         }
     }
     else
     {
-        ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+        ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
     }
     return ret;
 }
 
-rbus_error_t rbus_discoverObjectElements(const char * object, int * count, char *** elements)
+rbusCoreError_t rbus_discoverObjectElements(const char * object, int * count, char *** elements)
 {
     rtError err = RT_OK;
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtMessage msg, rsp;
 
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     if((NULL == object) || (NULL == elements) || (NULL == count))
     {
         RBUSCORELOG_ERROR("Object/elements/count is NULL");
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     rtMessage_Create(&msg);
@@ -1858,7 +1858,7 @@ rbus_error_t rbus_discoverObjectElements(const char * object, int * count, char 
                         free(array_ptr[j]);
                     free(array_ptr);
                     RBUSCORELOG_ERROR("Read/Memory allocation failure");
-                    ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                    ret = RBUSCORE_ERROR_GENERAL;
                     break;
                 }
             }
@@ -1866,24 +1866,24 @@ rbus_error_t rbus_discoverObjectElements(const char * object, int * count, char 
         else
         {
             RBUSCORELOG_ERROR("Memory allocation failure");
-            ret = RTMESSAGE_BUS_ERROR_INSUFFICIENT_MEMORY;
+            ret = RBUSCORE_ERROR_INSUFFICIENT_MEMORY;
         }
 
         rtMessage_Release(msg);
 
-        ret = RTMESSAGE_BUS_SUCCESS;
+        ret = RBUSCORE_SUCCESS;
     }
     else
     {
-        ret = RTMESSAGE_BUS_ERROR_GENERAL;
+        ret = RBUSCORE_ERROR_GENERAL;
     }
 
     return ret;
 }
 
-rbus_error_t rbus_discoverElementObjects(const char* element, int * count, char *** objects)
+rbusCoreError_t rbus_discoverElementObjects(const char* element, int * count, char *** objects)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtError err = RT_OK;
     rtMessage msg, rsp;
 
@@ -1897,7 +1897,7 @@ rbus_error_t rbus_discoverElementObjects(const char* element, int * count, char 
     {
         RBUSCORELOG_ERROR("Null entries in element list.");
         rtMessage_Release(msg);
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     err = rtConnection_SendRequest(g_connection, msg, RTM_DISCOVER_ELEMENT_OBJECTS, &rsp, TIMEOUT_VALUE_FIRE_AND_FORGET);
@@ -1929,7 +1929,7 @@ rbus_error_t rbus_discoverElementObjects(const char* element, int * count, char 
                             free(array_ptr[j]);
                         free(array_ptr);
                         RBUSCORELOG_ERROR("Read/Memory allocation failure");
-                        ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                        ret = RBUSCORE_ERROR_GENERAL;
                         break;
                     }
                 }
@@ -1937,26 +1937,26 @@ rbus_error_t rbus_discoverElementObjects(const char* element, int * count, char 
             else
             {
                 RBUSCORELOG_ERROR("Memory allocation failure");
-                ret = RTMESSAGE_BUS_ERROR_INSUFFICIENT_MEMORY;
+                ret = RBUSCORE_ERROR_INSUFFICIENT_MEMORY;
             }
         }
         else
         {
-            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+            ret = RBUSCORE_ERROR_GENERAL;
         }
         rtMessage_Release(msg);
     }
     else
     {
-        ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+        ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
     }
     
     return ret;    
 }
 
-rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements, int * count, char *** objects)
+rbusCoreError_t rbus_discoverElementsObjects(int numElements, const char** elements, int * count, char *** objects)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtError err = RT_OK;
     rtMessage msg, rsp;
     char** array_ptr = NULL;
@@ -1976,7 +1976,7 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
     {
         RBUSCORELOG_ERROR("Null entries in element list.");
         rtMessage_Release(msg);
-        return RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        return RBUSCORE_ERROR_INVALID_PARAM;
     }
 
     err = rtConnection_SendRequest(g_connection, msg, RTM_DISCOVER_ELEMENT_OBJECTS, &rsp, TIMEOUT_VALUE_FIRE_AND_FORGET);
@@ -1992,7 +1992,7 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
         {
             int i;
 
-            for(i = 0; i < numElements && ret == RTMESSAGE_BUS_SUCCESS; ++i)
+            for(i = 0; i < numElements && ret == RBUSCORE_SUCCESS; ++i)
             {
                 int numComponents = 0;
                 const char* component = NULL;
@@ -2007,7 +2007,7 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
                     if (!next)
                     {
                         RBUSCORELOG_ERROR("Memory allocation failure");
-                        ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                        ret = RBUSCORE_ERROR_GENERAL;
                         break;
                     }
                     array_ptr = next;
@@ -2016,7 +2016,7 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
                         if (RT_OK != rtMessage_GetStringItem(msg, RTM_DISCOVERY_ITEMS, array_count, &component))
                         {
                             RBUSCORELOG_ERROR("Read item failure");
-                            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                            ret = RBUSCORE_ERROR_GENERAL;
                             break;
                         }
                         if(component[0]) /*rtrouted will put a 0 len string if no route found*/
@@ -2024,7 +2024,7 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
                             if (NULL == (array_ptr[array_count++] = strndup(component, MAX_OBJECT_NAME_LENGTH)))
                             {
                                 RBUSCORELOG_ERROR("Memory allocation failure");
-                                ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                                ret = RBUSCORE_ERROR_GENERAL;
                                 break;
                             }
                         }
@@ -2033,23 +2033,23 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
                 else
                 {
                     RBUSCORELOG_ERROR("rbus_discoverElementsObjects: failed at %s", elements[i]);
-                    ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                    ret = RBUSCORE_ERROR_GENERAL;
                     break;
                 }
             }
         }
         else
         {
-            ret = RTMESSAGE_BUS_ERROR_GENERAL;
+            ret = RBUSCORE_ERROR_GENERAL;
         }
         rtMessage_Release(msg);
     }
     else
     {
-        ret = RTMESSAGE_BUS_ERROR_MALFORMED_RESPONSE;
+        ret = RBUSCORE_ERROR_MALFORMED_RESPONSE;
     }
 
-    if (ret == RTMESSAGE_BUS_SUCCESS)
+    if (ret == RBUSCORE_SUCCESS)
     {
         *count = array_count;
         *objects = array_ptr;
@@ -2066,9 +2066,9 @@ rbus_error_t rbus_discoverElementsObjects(int numElements, const char** elements
     return ret;    
 }
 
-rbus_error_t rbus_discoverRegisteredComponents(int * count, char *** components)
+rbusCoreError_t rbus_discoverRegisteredComponents(int * count, char *** components)
 {
-    rbus_error_t ret = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t ret = RBUSCORE_SUCCESS;
     rtError err = RT_OK;
     rtMessage msg;
     rtMessage out;
@@ -2078,7 +2078,7 @@ rbus_error_t rbus_discoverRegisteredComponents(int * count, char *** components)
     if(NULL == g_connection)
     {
         RBUSCORELOG_ERROR("Not connected.");
-        return RTMESSAGE_BUS_ERROR_INVALID_STATE;
+        return RBUSCORE_ERROR_INVALID_STATE;
     }
 
     err = rtConnection_SendRequest(g_connection, out, RTM_DISCOVER_REGISTERED_COMPONENTS, &msg, TIMEOUT_VALUE_FIRE_AND_FORGET);
@@ -2110,7 +2110,7 @@ rbus_error_t rbus_discoverRegisteredComponents(int * count, char *** components)
                         free(array_ptr[j]);
                     free(array_ptr);
                     RBUSCORELOG_ERROR("Read/Memory allocation failure");
-                    ret = RTMESSAGE_BUS_ERROR_GENERAL;
+                    ret = RBUSCORE_ERROR_GENERAL;
                     break;
                 }
             }
@@ -2118,24 +2118,24 @@ rbus_error_t rbus_discoverRegisteredComponents(int * count, char *** components)
         else
         {
             RBUSCORELOG_ERROR("Memory allocation failure");
-            ret = RTMESSAGE_BUS_ERROR_INSUFFICIENT_MEMORY;
+            ret = RBUSCORE_ERROR_INSUFFICIENT_MEMORY;
         }
 
         rtMessage_Release(msg);
 
-        ret = RTMESSAGE_BUS_SUCCESS;
+        ret = RBUSCORE_SUCCESS;
     }
     else
     {
         RBUSCORELOG_ERROR("Failed with error code %d", err);
-        ret = RTMESSAGE_BUS_ERROR_GENERAL;
+        ret = RBUSCORE_ERROR_GENERAL;
     }
     
     return ret;
 }
 
-rbus_error_t subscribeOnevent(const char * path, rbus_callback_t callback);
-rbus_error_t unsubscribeOnevent(const char * path);
+rbusCoreError_t subscribeOnevent(const char * path, rbus_callback_t callback);
+rbusCoreError_t unsubscribeOnevent(const char * path);
 
 rbuscore_bus_status_t rbuscore_checkBusStatus(void)
 {
@@ -2156,7 +2156,7 @@ rbuscore_bus_status_t rbuscore_checkBusStatus(void)
 #endif /* RBUS_ALWAYS_ON */
 }
 
-rbus_error_t rbus_sendResponse(const rtMessageHeader* hdr, rbusMessage response)
+rbusCoreError_t rbus_sendResponse(const rtMessageHeader* hdr, rbusMessage response)
 {
     rtError err = RT_OK;
     uint8_t* data;
@@ -2169,7 +2169,7 @@ rbus_error_t rbus_sendResponse(const rtMessageHeader* hdr, rbusMessage response)
         {
             /* App declined to issue a response. Make one up ourselves. */
             rbusMessage_Init(&response);
-            rbusMessage_SetInt32(response, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+            rbusMessage_SetInt32(response, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
         }
         set_message_method(response, METHOD_RESPONSE);
 
@@ -2181,7 +2181,7 @@ rbus_error_t rbus_sendResponse(const rtMessageHeader* hdr, rbusMessage response)
         }
         rbusMessage_Release(response);
     }
-    return err == RT_OK ? RTMESSAGE_BUS_SUCCESS : RTMESSAGE_BUS_ERROR_GENERAL;
+    return err == RT_OK ? RBUSCORE_SUCCESS : RBUSCORE_ERROR_GENERAL;
 }
 
 /* End of File */

@@ -36,7 +36,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     rbusMessage_SetString(*response, data);
     return 0;
 }
@@ -54,7 +54,7 @@ static int handle_set(const char * destination, const char * method, rbusMessage
         strncpy(data, payload, sizeof(data));
     }
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     return 0;
 }
 
@@ -65,7 +65,7 @@ static void handle_unknown(const char * destination, const char * method, rbusMe
     (void) method;
     (void) hdr;
     rbusMessage_Init(response);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_ERROR_UNSUPPORTED_METHOD);
+    rbusMessage_SetInt32(*response, RBUSCORE_ERROR_UNSUPPORTED_METHOD);
 }
 
 static int callback(const char * destination, const char * method, rbusMessage message, void * user_data, rbusMessage *response, const rtMessageHeader* hdr)
@@ -90,11 +90,11 @@ static int callback(const char * destination, const char * method, rbusMessage m
 int main(int argc, char *argv[])
 {
     (void) argc;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("syntax: sample_server <server object name>\n");
     rtLog_SetLevel(RT_LOG_INFO);
 
-    if((err = rbus_openBrokerConnection(argv[1])) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(argv[1])) == RBUSCORE_SUCCESS)
     {
         printf("Successfully connected to bus.\n");
     }
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     snprintf(buffer, (sizeof(buffer) - 1), "%s.obj1", argv[1]);
     printf("Registering object %s\n", buffer);
 
-    if((err = rbus_registerObj(buffer, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(buffer, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
@@ -110,13 +110,13 @@ int main(int argc, char *argv[])
     rbus_method_table_entry_t table[2] = {{METHOD_SETPARAMETERVALUES, NULL, handle_set}, {METHOD_GETPARAMETERVALUES, NULL, handle_get}};
     rbus_registerMethodTable(buffer, table, 2); 
     buffer[0] = 1;
-    if((err = rbus_registerObj(buffer, callback, NULL)) == RTMESSAGE_BUS_SUCCESS) //Negative test case
+    if((err = rbus_registerObj(buffer, callback, NULL)) == RBUSCORE_SUCCESS) //Negative test case
     {
         printf("Successfully registered object.\n");
     }
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

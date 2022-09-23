@@ -39,27 +39,27 @@ extern "C" {
 static bool OPEN_BROKER_CONNECTION2(char* connection_name)
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
-    if((err = rbus_openBrokerConnection(connection_name)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(connection_name)) == RBUSCORE_SUCCESS)
     {
          //printf("Successfully connected to bus.\n");
          result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_openBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_openBrokerConnection failed";
     return result;
 }
 
 static bool CLOSE_BROKER_CONNECTION2()
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         //printf("Successfully disconnected from bus.\n");
         result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_closeBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_closeBrokerConnection failed";
     return result;
 }
 
@@ -76,7 +76,7 @@ static void CREATE_RBUS_SERVER_INSTANCE2(int handle, int obj_count)
     char obj_name[20] = "student_info";
     int i = 1;
     char buffer[DEFAULT_RESULT_BUFFERSIZE];
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     bool conn_status = false;
     static char test_buffer[100][100] = {};
 
@@ -100,12 +100,12 @@ static void CREATE_RBUS_SERVER_INSTANCE2(int handle, int obj_count)
         strncpy(*(test_buffer + i), buffer, 100);
 
         err = rbus_registerObj(buffer, callback, NULL);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerObj failed";
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerObj failed";
 
         rbus_method_table_entry_t table[2] = {{METHOD_SETPARAMETERVALUES, (void *)(test_buffer + i), handle_setStudentInfo}, {METHOD_GETPARAMETERVALUES, (void *)(test_buffer + i), handle_getStudentInfo}};
 
         err = rbus_registerMethodTable(buffer, table, 2);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerMethodTable failed";
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerMethodTable failed";
     }
     return;
 }
@@ -122,7 +122,7 @@ static void CREATE_RBUS_SERVER_INSTANCE3(const char * app_prefix, int num)
     std::string server_name("");
     std::string num_string = integer2string(num);
     server_name += app_prefix + num_string;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
     printf("*** CREATING SERVER : %s \n", server_name.c_str());
 
@@ -130,23 +130,23 @@ static void CREATE_RBUS_SERVER_INSTANCE3(const char * app_prefix, int num)
     reset_stored_data();
 
     err = rbus_openBrokerConnection(server_name.c_str());
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_openBrokerConnection2() failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_openBrokerConnection2() failed";
     
     std::string obj_name = std::string(app_prefix) + num_string + ".obj";
     err = rbus_registerObj(obj_name.c_str(), callback, NULL);
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerObj failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerObj failed";
     err = rbus_addElement(obj_name.c_str(), std::string(app_prefix + num_string + std::string(".element")).c_str());
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_addElement failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_addElement failed";
     rbus_addElement(obj_name.c_str(), std::string("common.element." + num_string).c_str());
     return;
 }
 
 
-static void RBUS_PULL_OBJECT2(char* expected_data, char* server_obj, rbus_error_t expected_err)
+static void RBUS_PULL_OBJECT2(char* expected_data, char* server_obj, rbusCoreError_t expected_err)
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage response;
-    if((err = rbus_pullObj(server_obj, 1000, &response)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_pullObj(server_obj, 1000, &response)) == RBUSCORE_SUCCESS)
     {
         const char* buff = NULL;
         rbusMessage_GetString(response, &buff);
@@ -162,9 +162,9 @@ static void RBUS_PULL_OBJECT2(char* expected_data, char* server_obj, rbus_error_
     return;
 }
 
-static void RBUS_PUSH_OBJECT2(char* data, char* server_obj, rbus_error_t expected_err)
+static void RBUS_PUSH_OBJECT2(char* data, char* server_obj, rbusCoreError_t expected_err)
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rbusMessage setter;
     rbusMessage_Init(&setter);
     rbusMessage_SetString(setter, data);
@@ -230,10 +230,10 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test1)
         conn_status = OPEN_BROKER_CONNECTION2(client_name);
         int num_comps;
         char** components;
-        rbus_error_t err = rbus_discoverRegisteredComponents(&num_comps, &components);
-        EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_discoverRegisteredComponents failed";
+        rbusCoreError_t err = rbus_discoverRegisteredComponents(&num_comps, &components);
+        EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_discoverRegisteredComponents failed";
         std::vector <std::string> object_list;
-        if(RTMESSAGE_BUS_SUCCESS == err)
+        if(RBUSCORE_SUCCESS == err)
         {
             for(int i = 0; i < num_comps; i++)
             {
@@ -258,8 +258,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test1)
                 printf("Registering object %s\n", name_buf);
                 snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d_of_server-%d", i, counter);
 
-                RBUS_PUSH_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-                RBUS_PULL_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+                RBUS_PUSH_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
+                RBUS_PULL_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
 
                 int listed_in_discovery = 0;
                 for(unsigned int k = 0; k < object_list.size(); k++)
@@ -319,8 +319,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test2)
                 printf("Registering object %s\n", name_buf);
                 snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d_of_server-%d", i, counter);
 
-                RBUS_PUSH_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-                RBUS_PULL_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+                RBUS_PUSH_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
+                RBUS_PULL_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
             }
         }
         if(conn_status)
@@ -370,8 +370,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test3)
                 printf("Registering object %s\n", name_buf);
                 snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d_of_server-%d", i, counter);
 
-                RBUS_PUSH_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-                RBUS_PULL_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+                RBUS_PUSH_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
+                RBUS_PULL_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
             }
         }
         if(conn_status)
@@ -421,8 +421,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test4)
                 printf("Registering object %s\n", name_buf);
                 snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d_of_server-%d", i, counter);
 
-                RBUS_PUSH_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-                RBUS_PULL_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+                RBUS_PUSH_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
+                RBUS_PULL_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
             }
         }
         if(conn_status)
@@ -473,8 +473,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test5)
                 printf("Registering object %s\n", name_buf);
                 snprintf(data_buf, (sizeof(data_buf) - 1), "student_%d_of_server-%d", i, counter);
 
-                RBUS_PUSH_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
-                RBUS_PULL_OBJECT2(data_buf, name_buf, RTMESSAGE_BUS_SUCCESS);
+                RBUS_PUSH_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
+                RBUS_PULL_OBJECT2(data_buf, name_buf, RBUSCORE_SUCCESS);
             }
         }
         if(conn_status)
@@ -508,7 +508,7 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test6)
     }
     if (is_parent)
     {
-        rbus_error_t err;
+        rbusCoreError_t err;
 	rbus_openBrokerConnection("lookup_client");
         const char *inputs[] = {"lookup_test0.obj", "lookup_test0.element", "lookup_test1.obj", "lookup_test1.element1", "lookup_test0.", "lookup_test1.", "abcd", "common.", "common.element.0", "common.element.1"};
         constexpr int in_length = sizeof(inputs) / sizeof(char *);
@@ -516,8 +516,8 @@ TEST_F(MultipleServerTest, rbus_multipleServer_test6)
         char **output = nullptr;
         sleep(3);//Allow servers to set up.
         err = rbus_discoverElementObjects(inputs, in_length, &output);
-        EXPECT_EQ(RTMESSAGE_BUS_SUCCESS, err) << "rbus_discoverElementObjects failed.";
-        if(RTMESSAGE_BUS_SUCCESS == err)
+        EXPECT_EQ(RBUSCORE_SUCCESS, err) << "rbus_discoverElementObjects failed.";
+        if(RBUSCORE_SUCCESS == err)
         {
             printf("Multi-lookup returned success. Printing mapping information...\n");
             for (int i = 0; i < in_length; i++)

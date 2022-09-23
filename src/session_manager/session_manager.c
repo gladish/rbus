@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "rbus_core.h"
+#include "rbuscore.h"
 #include "rtLog.h"
 #include "rbus_session_mgr.h"
 
@@ -39,13 +39,13 @@ static int request_session_id(const char * destination, const char * method, rbu
     {
         g_current_session_id = ++g_counter;
         printf("Creating new session %d\n", g_current_session_id);
-        rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+        rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
         rbusMessage_SetInt32(*response, g_current_session_id);
     }
     else
     {
         printf("Cannot create new session when session %d is active.\n", g_current_session_id);
-        rbusMessage_SetInt32(*response, RTMESSAGE_BUS_ERROR_INVALID_STATE);
+        rbusMessage_SetInt32(*response, RBUSCORE_ERROR_INVALID_STATE);
     }
     return 0;
 }
@@ -59,7 +59,7 @@ static int get_session_id(const char * destination, const char * method, rbusMes
     (void) hdr;
     rbusMessage_Init(response);
     printf("Current session id is %d\n", g_current_session_id);
-    rbusMessage_SetInt32(*response, RTMESSAGE_BUS_SUCCESS);
+    rbusMessage_SetInt32(*response, RBUSCORE_SUCCESS);
     rbusMessage_SetInt32(*response, g_current_session_id);
     return 0;
 }
@@ -72,7 +72,7 @@ static int end_session(const char * destination, const char * method, rbusMessag
     (void) hdr;
     rbusMessage_Init(response);
     int sessionid = 0;
-    rbus_error_t result = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t result = RBUSCORE_SUCCESS;
 
     if(RT_OK == rbusMessage_GetInt32(request, &sessionid))
     {
@@ -85,13 +85,13 @@ static int end_session(const char * destination, const char * method, rbusMessag
         else
         {
             printf("Cannot end session %d. It doesn't match active session, which is %d.\n", sessionid, g_current_session_id);
-            result = RTMESSAGE_BUS_ERROR_INVALID_STATE;
+            result = RBUSCORE_ERROR_INVALID_STATE;
         }
     }
     else
     {
         printf("Session id not found. Cannot process end of session.\n");
-        result = RTMESSAGE_BUS_ERROR_INVALID_PARAM;
+        result = RBUSCORE_ERROR_INVALID_PARAM;
     }
     rbusMessage_SetInt32(*response, result);
     return 0;
@@ -120,13 +120,13 @@ int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("rbus session manager launching.\n");
     rtLog_SetLevel(RT_LOG_INFO);
 
     while(1)
     {
-        if((err = rbus_openBrokerConnection(RBUS_SMGR_DESTINATION_NAME)) == RTMESSAGE_BUS_SUCCESS)
+        if((err = rbus_openBrokerConnection(RBUS_SMGR_DESTINATION_NAME)) == RBUSCORE_SUCCESS)
         {
             printf("Successfully connected to bus.\n");
             break;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if((err = rbus_registerObj(RBUS_SMGR_DESTINATION_NAME, callback, NULL)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_registerObj(RBUS_SMGR_DESTINATION_NAME, callback, NULL)) == RBUSCORE_SUCCESS)
     {
         printf("Successfully registered object.\n");
     }
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
     rbus_registerMethodTable(RBUS_SMGR_DESTINATION_NAME, table, 3); 
     pause();
 
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         printf("Successfully disconnected from bus.\n");
     }

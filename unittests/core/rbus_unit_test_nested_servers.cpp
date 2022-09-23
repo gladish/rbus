@@ -38,26 +38,26 @@ extern "C" {
 static bool OPEN_BROKER_CONNECTION2(const char* connection_name)
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
 
-    if((err = rbus_openBrokerConnection(connection_name)) == RTMESSAGE_BUS_SUCCESS)
+    if((err = rbus_openBrokerConnection(connection_name)) == RBUSCORE_SUCCESS)
     {
          result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_openBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_openBrokerConnection failed";
     return result;
 }
 
 static bool CLOSE_BROKER_CONNECTION2()
 {
     bool result = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-    if((err = rbus_closeBrokerConnection()) == RTMESSAGE_BUS_SUCCESS)
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
+    if((err = rbus_closeBrokerConnection()) == RBUSCORE_SUCCESS)
     {
         //printf("Successfully disconnected from bus.\n");
         result = true;
     }
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_closeBrokerConnection failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_closeBrokerConnection failed";
     return result;
 }
 
@@ -72,7 +72,7 @@ static void handle_term2(int sig)
 static void CREATE_RBUS_SERVER_INSTANCE(const char * server_name, const char * object_name)
 {
     bool conn_status = false;
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     printf("*** CREATING SERVER : %s \n", server_name);
 
     signal(SIGTERM, handle_term2);
@@ -85,20 +85,20 @@ static void CREATE_RBUS_SERVER_INSTANCE(const char * server_name, const char * o
     printf("Registering object %s\n", object_name);
 
     err = rbus_registerObj(object_name, callback, NULL);
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerObj failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerObj failed";
 
     rbus_method_table_entry_t table[1] = {{METHOD_GETPARAMETERVALUES, NULL, handle_recursive_get}};
 
     err = rbus_registerMethodTable(object_name, table, 1);
-    EXPECT_EQ(err, RTMESSAGE_BUS_SUCCESS) << "rbus_registerMethodTable failed";
+    EXPECT_EQ(err, RBUSCORE_SUCCESS) << "rbus_registerMethodTable failed";
     return;
 }
 
-static void RBUS_RPC(const char *object, const char* method, const char * payload, rbus_error_t expected_err)
+static void RBUS_RPC(const char *object, const char* method, const char * payload, rbusCoreError_t expected_err)
 {
-    rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
+    rbusCoreError_t err = RBUSCORE_SUCCESS;
     rtError er = RT_OK;
-    int rpc_result = RTMESSAGE_BUS_ERROR_GENERAL;
+    int rpc_result = RBUSCORE_ERROR_GENERAL;
     rbusMessage setter, response;
     rbusMessage_Init(&setter);
     if(nullptr != payload)
@@ -106,11 +106,11 @@ static void RBUS_RPC(const char *object, const char* method, const char * payloa
     err = rbus_invokeRemoteMethod(object, method, setter, 1000, &response);
     EXPECT_EQ(err, expected_err) << "Nested RPC failed";
    
-    if(RTMESSAGE_BUS_SUCCESS == err)
+    if(RBUSCORE_SUCCESS == err)
     {
         er = rbusMessage_GetInt32(response, &rpc_result);
         EXPECT_EQ(RT_OK, er) << "Nested RPC failed";
-        EXPECT_EQ(RTMESSAGE_BUS_SUCCESS, rpc_result) << "Nested RPC failed";
+        EXPECT_EQ(RBUSCORE_SUCCESS, rpc_result) << "Nested RPC failed";
         rbusMessage_Release(response);
     }
     return;
@@ -161,10 +161,10 @@ TEST_F(NestedRPCTest, rbus_multipleServer_test1)
     {
         sleep(2);
         conn_status = OPEN_BROKER_CONNECTION2(client_name);
-        RBUS_RPC("ping", METHOD_GETPARAMETERVALUES, "pong", RTMESSAGE_BUS_SUCCESS);
-        RBUS_RPC("pong", METHOD_GETPARAMETERVALUES, "ping", RTMESSAGE_BUS_SUCCESS);
-        //RBUS_RPC("ping", METHOD_GETPARAMETERVALUES, "ping", RTMESSAGE_BUS_SUCCESS);
-        //RBUS_RPC("pong", METHOD_GETPARAMETERVALUES, "pong", RTMESSAGE_BUS_SUCCESS);
+        RBUS_RPC("ping", METHOD_GETPARAMETERVALUES, "pong", RBUSCORE_SUCCESS);
+        RBUS_RPC("pong", METHOD_GETPARAMETERVALUES, "ping", RBUSCORE_SUCCESS);
+        //RBUS_RPC("ping", METHOD_GETPARAMETERVALUES, "ping", RBUSCORE_SUCCESS);
+        //RBUS_RPC("pong", METHOD_GETPARAMETERVALUES, "pong", RBUSCORE_SUCCESS);
         if(conn_status)
             CLOSE_BROKER_CONNECTION2();
         for(i = 0; i < server_count; i++)

@@ -16,74 +16,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-cmake_minimum_required(VERSION 2.8)
 project(dmProvider)
-include(ExternalProject)
-cmake_policy(SET CMP0015 NEW)
-set(CMAKE_CXX_STANDARD 11)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
-option(BUILD_FOR_DESKTOP "BUILD_FOR_DESKTOP" ON)
 option(BUILD_DMPROVIDER_LIB "BUILD_DMPROVIDER_LIB" ON)
 option(BUILD_DM_SAMPLE_APP "BUILD_DM_SAMPLE_APP" ON)
 
-set(CMAKE_C_FLAGS "")
-
-ExternalProject_Add(
-  cjson
-  GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-  GIT_TAG v1.6.0
-  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
-  INSTALL_COMMAND ""
-  CONFIGURE_COMMAND ""
-  BUILD_IN_SOURCE 1
-  PREFIX deps
-  BUILD_COMMAND make)
-
-if (BUILD_FOR_DESKTOP)
-    set(MESSAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
-    set(LIBRARY_DIR ${CJSON_DIR} ${MESSAGE_DIR})
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-			${CJSON_DIR} 
-            ${MESSAGE_DIR}
-		       )
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}
-	             ${LIBRARY_DIR}
-                    )
-else()
-     set(INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
-     set(LIBRARY_DIR ${CMAKE_INSTALL_PREFIX}/lib)
-     include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-		    ${INCLUDE_DIR}
-                    ${INCLUDE_DIR}/cjson
-                    ${INCLUDE_DIR}/rtmessage
-                   )
-     link_directories(${CMAKE_CURRENT_SOURCE_DIR}
-	         ${LIBRARY_DIR}
-                )
-endif (BUILD_FOR_DESKTOP)
-
 set(DM_SOURCE_FILES dmValue.cpp dmProvider.cpp)
-
 set(DM_APP_FILES dm_provider.cpp)
 
-add_definitions(-DRT_PLATFORM_LINUX)
+  add_library(
+    dataProvider
+    SHARED
+    dataProvider/dmProviderDatabase.cpp
+    dataProvider/dmProviderHost.cpp
+    dataProvider/dmPropertyInfo.cpp
+    dataProvider/dmProviderInfo.cpp
+    dataProvider/dmQueryResult.cpp
+    dataProvider/dmProvider.cpp
+    dataProvider/dmError.cpp
+    dataProvider/dmValue.cpp
+    dataProvider/dmClient.cpp)
+  add_dependencies(
+    dataProvider
+    rtMessage)
+  target_link_libraries(
+    dataProvider
+    rtMessage)
 
-set(LIBRARY_LINKER_OPTIONS -Werror -Wall -Wextra -I. -fPIC)
-set(DM_LINK_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${LIBRARY_DIR})
+if (BUILD_DMCLI)
+  add_executable(dmcli dataProvider/dmcli.cpp)
+  if (BUILD_FOR_DESKTOP)
+    add_dependencies(dmcli cjson rtMessage dataProvider)
+    add_definitions("-DDEFAULT_DATAMODELDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/dataProvider/data\"")
+  else()
+    add_definitions("-DDEFAULT_DATAMODELDIR=\"${RDK_FSROOT_PATH}/etc/model\"")
+  endif (BUILD_FOR_DESKTOP)
+  if (INCLUDE_BREAKPAD)
+    add_dependencies(dmcli ${BREAKPAD_PATH})
+    target_link_libraries(dmcli dataProvider -lbreakpadwrap rtMessage)
+  else ()
+    target_link_libraries(dmcli dataProvider rtMessage)
+  endif (INCLUDE_BREAKPAD)
+endif (BUILD_DMCLI)
 
-if (ENABLE_DM_DEBUG)
-    message("Enabling dm-provider debug")
-    add_definitions(-DRT_RPC_DEBUG -DRT_DEBUG)
-    set(CMAKE_CFLAGS "${CMAKE_C_FLAGS} -g -O0 -fno-inline")
-else()
-    set(CMAKE_CFLAGS "${CMAKE_C_FLAGS} -O2")
-
-endif (ENABLE_DM_DEBUG)
-
+if (BUILD_DMCLI_SAMPLE_APP)
+    # sample provider for general
+    add_executable(sample_provider_gen dataProvider/sample_provider_gen.cpp)
+    if (BUILD_FOR_DESKTOP)
+      add_dependencies(sample_provider_gen dataProvider)
+    endif (BUILD_FOR_DESKTOP)
+    target_link_libraries(sample_provider_gen ${LIBRARY_LINKER_OPTIONS} rtMessage dataProvider)
+    # sample provider for wifi
+    add_executable(sample_provider_wifi dataProvider/sample_provider_wifi.cpp)
+    if (BUILD_FOR_DESKTOP)
+      add_dependencies(sample_provider_wifi dataProvider)
+    endif (BUILD_FOR_DESKTOP)
+    target_link_libraries(sample_provider_wifi ${LIBRARY_LINKER_OPTIONS} rtMessage dataProvider)
 if (ENABLE_DM_PROFILE)
     message("Enabling dm profile")
     set(CMAKE_CFLAGS "${CMAKE_C_FLAGS} -pg")

@@ -19,8 +19,11 @@
 #############################################################################
 
 
-include_directories(
-    ../include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
+include_directories(${PROJECT_SOURCE_DIR}/src/core)
+include_directories(${PROJECT_SOURCE_DIR}/src/session_manager)
+
 add_library(
     rbus
     SHARED
@@ -39,15 +42,12 @@ add_library(
     rbus_asyncsubscribe.c
     rbus_config.c)
 
-target_link_libraries(
-    rbus
-    ${RTMESSAGE_LIBRARIES}
-    ${RBUSCORE_LIBRARIES}
-    -fPIC
-    -pthread)
+target_link_libraries(rbus
+                      rbuscore
+		      rtMessage
+                      -fPIC
+                      -pthread)
 
-target_include_directories (rbus PUBLIC ${RBUSCORE_INCLUDE_DIRS})
-target_include_directories (rbus PUBLIC ${RTMESSAGE_INCLUDE_DIRS})
 target_include_directories (rbus PUBLIC ${RDKLOGGER_INCLUDE_DIRS})
 
 set_target_properties(rbus
@@ -58,6 +58,6 @@ install (TARGETS rbus
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
 
-install (DIRECTORY ../include/
+install (DIRECTORY ${PROJECT_SOURCE_DIR}/include
     DESTINATION "include/rbus")
 
