@@ -18,7 +18,7 @@
 ##########################################################################
 add_library(
     rbuscore
-    STATIC
+    SHARED
     rbuscore.c
     rbuscore_message.c)
 
@@ -35,3 +35,8 @@ target_link_libraries(
 set_target_properties(rbuscore
     PROPERTIES SOVERSION "0"
     VERSION "${PROJECT_VERSION}")
+
+
+install (TARGETS rbuscore
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib)

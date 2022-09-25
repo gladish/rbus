@@ -18,8 +18,8 @@
  */
 #include "gtest/gtest.h"
 #include <rbus.h>
-#include "../src/rbus_handle.h"
-#include "../include/rbus_property.h"
+#include "rbus_handle.h"
+#include "rbus_property.h"
 
 static void subscribeHandler(
     rbusHandle_t handle,

@@ -16,9 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-include_directories(
-	../../..
-    ../../include)
+include_directories(${PROJECT_SOURCE_DIR}/src/core)
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
 
 if (BUILD_RBUS_UNIT_TEST)
 find_package(GTest QUIET)
@@ -31,12 +30,12 @@ else ()
     endif ()
 
     add_executable(rbus_test_server rbus_test_util.c rbus_test_server.c)
-    add_dependencies(rbus_test_server rbus-core)
-    target_link_libraries(rbus_test_server rbus-core)
+    add_dependencies(rbus_test_server rbuscore)
+    target_link_libraries(rbus_test_server rbuscore)
 
     add_executable(rbus_event_server rbus_test_util.c rbus_event_server.c)
-    add_dependencies(rbus_event_server rbus-core)
-    target_link_libraries(rbus_event_server rbus-core)
+    add_dependencies(rbus_event_server rbuscore)
+    target_link_libraries(rbus_event_server rbuscore)
 
    enable_testing()
     include_directories(${GTEST_INCLUDE_DIR})
@@ -53,8 +52,8 @@ else ()
                    rbus_unit_test_app.cpp
                    rbus_unit_test_event_client.cpp
                    rbus_unit_test_event_server.cpp)
-    add_dependencies(rbuscore_gtest.bin rbus-core)
-    target_link_libraries(rbuscore_gtest.bin rbus-core
+    add_dependencies(rbuscore_gtest.bin rbuscore)
+    target_link_libraries(rbuscore_gtest.bin rbuscore
                                            gtest)
 
     add_test(

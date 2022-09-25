@@ -7,7 +7,7 @@ Test server for unit test client testing
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include "rbus_core.h"
+#include "rbuscore.h"
 
 #include "rbus_test_util.h"
 

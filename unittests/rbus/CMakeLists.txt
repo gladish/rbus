@@ -1,5 +1,10 @@
 find_package(GTest QUIET)
 
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/rbus)
+include_directories(${PROJECT_SOURCE_DIR}/src/core)
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
+
 if (NOT GTEST_INCLUDE_DIR)
     message("Warning GTest wasn't found. GTest library will be built.")
     include(ExternalProject)

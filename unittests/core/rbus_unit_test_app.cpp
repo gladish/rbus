@@ -29,7 +29,7 @@ rbus_unit_stresstest_server.cpp
 #include <unistd.h>
 #include <string.h>
 extern "C" {
-#include "rbus_core.h"
+#include "rbuscore.h"
 }
 #include "gtest_app.h"
 

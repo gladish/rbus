@@ -21,7 +21,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <rbus_core.h>
+#include <rbuscore.h>
 #include <rbus.h>
 #include "rbusProviderConsumer.h"
 #include <errno.h>
@@ -581,7 +581,7 @@ static int handle_get(const char * destination, const char * method, rbusMessage
 
 int rbuscoreProvider(rbusGtest_t test, pid_t pid, int *consumer_status)
 {
-  rbuscoreError_t err = RBUSCORE_ERROR_GENERAL;
+  rbusCoreError_t err = RBUSCORE_ERROR_GENERAL;
   int rc = RBUS_ERROR_BUS_ERROR, wait_ret = -1;
   const char *object_name = NULL;
   rbus_method_table_entry_t table[1] = {{METHOD_GETPARAMETERVALUES, &test, handle_get}};

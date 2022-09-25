@@ -105,6 +105,8 @@ if (BUILD_FOR_DESKTOP)
     ${CMAKE_BINARY_DIR}
     ${LIBRARY_DIR})
 
+  set(CJSON_LIBRARIES "-lcjson")
+
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so.1 ${CMAKE_CURRENT_BINARY_DIR}/deps/src/cjson/libcjson.so.1.6.0 DESTINATION lib)
 
 

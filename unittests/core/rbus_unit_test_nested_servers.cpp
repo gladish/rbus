@@ -25,7 +25,7 @@ Test Case : Testing nested rbus RPC calls
 #include <string.h>
 #include <signal.h>
 extern "C" {
-#include "rbus_core.h"
+#include "rbuscore.h"
 
 }
 #include "gtest_app.h"

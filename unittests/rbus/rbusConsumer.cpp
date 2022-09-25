@@ -20,10 +20,11 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <rbus_core.h>
+#include <rbuscore.h>
 #include <rbus.h>
 #include "rbusProviderConsumer.h"
 #include <math.h>
+#include <cfloat>
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 void hasProviderStarted(const char *provider);
