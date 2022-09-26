@@ -2127,6 +2127,7 @@ static int _method_callback_handler(rbusHandle_t handle, rbusMessage request, rb
 
     if(result == RBUS_ERROR_ASYNC_RESPONSE)
     {
+        rbusObject_Release(outParams);
         return RBUSCORE_SUCCESS_ASYNC;
     }
     else
@@ -4062,11 +4063,6 @@ rbusError_t  rbusEvent_Subscribe(
 
     errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL, 0, 0 , timeout, NULL);
 
-    if(errorcode != RBUS_ERROR_SUCCESS)
-    {
-        RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, eventName, errorcode);
-    }
-
     return errorcode;
 }
 
@@ -4088,11 +4084,6 @@ rbusError_t  rbusEvent_SubscribeAsync(
     RBUSLOG_DEBUG("%s: %s", __FUNCTION__, eventName);
 
     errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL, 0, 0, timeout, subscribeHandler);
-
-    if(errorcode != RBUS_ERROR_SUCCESS)
-    {
-        RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, eventName, errorcode);
-    }
 
     return errorcode;
 }
@@ -4166,7 +4157,7 @@ rbusError_t rbusEvent_SubscribeEx(
 
     for(i = 0; i < numSubscriptions; ++i)
     {
-        RBUSLOG_INFO("%s: %s", __FUNCTION__, subscription[i].eventName);
+        RBUSLOG_DEBUG ("%s: %s", __FUNCTION__, subscription[i].eventName);
 
         //FIXME/TODO -- since this is not using async path, this could block and thus block the rest of the subs to come
         //For rbusEvent_Subscribe, since it a single subscribe, blocking is fine but for rbusEvent_SubscribeEx,
@@ -4178,8 +4169,6 @@ rbusError_t rbusEvent_SubscribeEx(
 
         if(errorcode != RBUS_ERROR_SUCCESS)
         {
-            RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, subscription[i].eventName, errorcode);
-
             /*  Treat SubscribeEx like a transaction because
                 if any subs fails, how will the user know which ones succeeded and which failed ?
                 So, as a transaction, we just undo everything, which are all those from 0 to i-1.
@@ -4413,7 +4402,7 @@ rbusError_t  rbusEvent_Publish(
 
             rbusEventData_appendToMessage(eventData, subscription->filter, subscription->componentId, msg);
 
-            RBUSLOG_INFO("rbusEvent_Publish: publishing event %s to listener %s", subscription->eventName, subscription->listener);
+            RBUSLOG_DEBUG("rbusEvent_Publish: publishing event %s to listener %s", subscription->eventName, subscription->listener);
 
             err = rbus_publishSubscriberEvent(
                 handleInfo->componentName,  
