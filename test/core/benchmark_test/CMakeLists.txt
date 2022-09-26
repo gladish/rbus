@@ -20,18 +20,16 @@ include_directories(
             ../../..
             ../../include)
 
-if (BUILD_RBUS_BENCHMARK_TEST)
 find_package(benchmark REQUIRED)
 
 add_executable(rbus_benchmark_test_app
                rbus_test_util.c
                rbus_benchmark_test_app.cpp)
 add_definitions("-DHAVE_POSIX_REGEX")
-target_link_libraries(rbus_benchmark_test_app rbus-core benchmark ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(rbus_benchmark_test_app rbuscore benchmark ${CMAKE_THREAD_LIBS_INIT})
 
 add_test(rbus_benchmark_test rbus_benchmark_test_app --benchmark_min_time=0.01)
 
 enable_testing()
 install (TARGETS rbus_benchmark_test_app
          RUNTIME DESTINATION bin)
-endif (BUILD_RBUS_BENCHMARK_TEST)

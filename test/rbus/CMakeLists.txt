@@ -17,12 +17,10 @@
 # limitations under the License.
 #############################################################################
 
-include_directories(
-    ../include
-    ../src
-    )
-
-if (BUILD_RBUS_INTERFACE_TEST_APPS)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
+include_directories(${PROJECT_SOURCE_DIR}/src/core)
+include_directories(${PROJECT_SOURCE_DIR}/src/rbus)
 
 add_executable(rbusTestProvider 
     provider/rbusTestProvider.c
@@ -85,4 +83,3 @@ target_link_libraries(rbusRecoveryConsumer rbus)
 install (TARGETS rbusRecoveryConsumer 
         RUNTIME DESTINATION bin)
 
-endif (BUILD_RBUS_INTERFACE_TEST_APPS)

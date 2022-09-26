@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
+include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
 add_library(
     rbuscore
     SHARED
@@ -24,13 +25,7 @@ add_library(
 
 add_dependencies(rbuscore msgpack rtMessage)
 
-include_directories(../rtmessage)
-
-target_link_libraries(
-    rbuscore
-    rtMessage
-    ${MSGPACK_LIBRARIES}
-    -lpthread)
+target_link_libraries(rbuscore rtMessage ${MSGPACK_LIBRARIES} -lpthread)
 
 set_target_properties(rbuscore
     PROPERTIES SOVERSION "0"

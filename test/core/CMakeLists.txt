@@ -20,8 +20,6 @@ include_directories(
 	../..
     ../include)
 
-if (BUILD_RBUS_SAMPLE_APPS)
-
 if (BUILD_FOR_DESKTOP)
 	include_directories(
         ${CMAKE_SOURCE_DIR}/msgpack/src/msgpack/include)
@@ -95,12 +93,6 @@ install (TARGETS rbus_sample_event_server rbus_sample_event_client rbus_sample_w
         RUNTIME DESTINATION bin)
 
 
-endif (BUILD_RBUS_SAMPLE_APPS)
-
-if (BUILD_RBUS_UNIT_TEST)
-add_subdirectory(unit_test)
-endif (BUILD_RBUS_UNIT_TEST)
-
-if (BUILD_RBUS_BENCHMARK_TEST)
+if (BUILD_RBUSCORE_BENCHMARK_TEST)
 add_subdirectory(benchmark_test)
-endif (BUILD_RBUS_BENCHMARK_TEST)
+endif (BUILD_RBUSCORE_BENCHMARK_TEST)

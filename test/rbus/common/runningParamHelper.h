@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <rbus.h>
 
-#include <rbus_core.h>
+#include <rbuscore.h>
 
 #ifdef __cplusplus
 extern "C" {
