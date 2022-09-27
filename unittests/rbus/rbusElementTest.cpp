@@ -18,8 +18,8 @@
 */
 
 #include <rbus.h>
-#include "../src/rbus_element.h"
-#include "../include/rbus_filter.h"
+#include "rbus_element.h"
+#include "rbus_filter.h"
 #include "gtest/gtest.h"
 
 static int isElementValid(elementNode* el, const char* expectedFullName)

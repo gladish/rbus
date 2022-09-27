@@ -12,7 +12,7 @@
 #include <float.h>
 #include <unistd.h>
 #include <rbus.h>
-#include "../../src/rbus_buffer.h"
+#include "rbus_buffer.h"
 #include <math.h>
 #include "../common/test_macros.h"
 #include <rtMemory.h>

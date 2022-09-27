@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 
 #include <rbus.h>
-#include "../src/rbus_tokenchain.h"
+#include "rbus_tokenchain.h"
 
 TEST(rbusTokenTest, negtestToken1)
 {

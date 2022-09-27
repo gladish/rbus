@@ -23,7 +23,7 @@ Test Case : Testing Marshalling APIs
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "rbus_message.h"
+#include "rbuscore_message.h"
 
 extern "C" {
 

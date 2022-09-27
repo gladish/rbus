@@ -42,11 +42,7 @@ add_library(
     rbus_asyncsubscribe.c
     rbus_config.c)
 
-target_link_libraries(rbus
-                      rbuscore
-		      rtMessage
-                      -fPIC
-                      -pthread)
+target_link_libraries(rbus rbuscore rtMessage -fPIC -pthread)
 
 target_include_directories (rbus PUBLIC ${RDKLOGGER_INCLUDE_DIRS})
 

@@ -20,7 +20,8 @@
 #include <rbus.h>
 #include <limits.h>
 #include <errno.h>
-#include "../src/rbus_buffer.h"
+#include "rbus_buffer.h"
+#include <float.h>
 
 TEST(rbusValueTest, validate_types)
 {

@@ -23,7 +23,7 @@
 #include <ctype.h>
 #include <rbus.h>
 #include <rtLog.h>
-#include "../../src/rbus_element.h"
+#include "rbus_element.h"
 #include "../common/test_macros.h"
 
 #define MD5_LEN 32

@@ -18,7 +18,7 @@
 */
 
 #include <rbus.h>
-#include "../../src/rbus_buffer.h"
+#include "rbus_buffer.h"
 #include "../common/test_macros.h"
 #include <string.h>
 #include <stdlib.h>

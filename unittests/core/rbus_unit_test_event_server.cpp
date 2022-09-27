@@ -25,7 +25,7 @@ Test Case : Testing rbus Event Register APIs, Publish Events creation APIs
 #include <string.h>
 #include <signal.h>
 extern "C" {
-#include "rbus_core.h"
+#include "rbuscore.h"
 
 }
 #include "gtest_app.h"

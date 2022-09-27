@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 #include "gtest/gtest.h"
-#include "../src/rbus_buffer.h"
+#include "rbus_buffer.h"
 #include <rbus.h>
 #include <stdio.h>
 #include <string.h>

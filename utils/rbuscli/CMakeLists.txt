@@ -22,8 +22,6 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/core)
 include_directories(${PROJECT_SOURCE_DIR}/src/rtmessage)
 
-if (BUILD_RBUS_INTERFACE_UTIL_APPS)
-
 add_executable(rbuscli rbuscli.c)
 target_link_libraries(rbuscli rbus)
 add_dependencies(rbuscli rbus linenoise)
@@ -36,6 +34,4 @@ else (BUILD_FOR_DESKTOP)
 endif (BUILD_FOR_DESKTOP)
 
 install (TARGETS rbuscli RUNTIME DESTINATION bin)
-
-endif (BUILD_RBUS_INTERFACE_UTIL_APPS)
 

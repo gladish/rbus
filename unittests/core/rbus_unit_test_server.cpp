@@ -25,7 +25,7 @@ Test Case : Testing rbus server creation APIs
 #include <string.h>
 #include <signal.h>
 extern "C" {
-#include "rbus_core.h"
+#include "rbuscore.h"
 }
 #include "gtest_app.h"
 #include "rbus_test_util.h"

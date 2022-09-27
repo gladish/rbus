@@ -19,10 +19,6 @@
 
 set(OPENSSL_REQUIRED FALSE)
 
-message("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
-
 if (WITH_SPAKE2)
   message("spake2 enabled")
   set(OPENSSL_REQUIRED TRUE)
@@ -64,7 +60,7 @@ endif (OPENSSL_REQUIRED)
 
 add_library(
       rtMessage
-      STATIC
+      SHARED
       rtConnection.c
       rtCipher.c
       rtLog.c
@@ -86,13 +82,11 @@ add_library(
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(rtMessage cjson)
-target_link_libraries(rtMessage ${LIBRARY_LINKER_OPTIONS} -pthread -lcjson)
+target_link_libraries(rtMessage -pthread ${CJSON_LIBRARIES})
 
 if (ENABLE_RDKLOGGER)
-    add_dependencies(rtMessage cjson rdklogger)
-    target_link_libraries(rtMessage ${LIBRARY_LINKER_OPTIONS} -pthread -lcjson -llog4c -lrdkloggers)
-else ()
-      target_link_libraries(rtMessage ${LIBRARY_LINKER_OPTIONS} -pthread -lcjson)
+    add_dependencies(rdklogger)
+    target_link_libraries(-lrdkloggers)
 endif (ENABLE_RDKLOGGER)
 
 if (OPENSSL_REQUIRED)
@@ -108,22 +102,18 @@ endif (WITH_SPAKE2)
 if (BUILD_RBUS_DAEMON)
     message ("Building rtrouted")
     add_executable(rtrouted rtrouted.c rtRoutingTree.c)
-    if (BUILD_FOR_DESKTOP)
-        add_dependencies(rtrouted cjson)
-    endif(BUILD_FOR_DESKTOP)
+    target_link_libraries(rtrouted rtMessage)
+
     if (INCLUDE_BREAKPAD)
       add_dependencies(rtrouted ${BREAKPAD_PATH})
-      target_link_libraries(rtrouted ${LIBRARY_LINKER_OPTIONS} -lbreakpadwrap rtMessage)
-    else ()
-      target_link_libraries(rtrouted ${LIBRARY_LINKER_OPTIONS} rtMessage)
+      target_link_libraries(rtrouted -lbreakpadwrap)
     endif (INCLUDE_BREAKPAD)
 
     # rtrouted_diag
     add_executable(rtrouted_diag diag_probe.c)
     add_dependencies(rtrouted_diag rtMessage)
-    target_link_libraries(rtrouted_diag ${LIBRARY_LINKER_OPTIONS} rtMessage)
-
+    target_link_libraries(rtrouted_diag rtMessage)
 endif (BUILD_RBUS_DAEMON)
 
 
-install (TARGETS rtrouted rtrouted_diag RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
+install (TARGETS rtMessage rtrouted rtrouted_diag RUNTIME DESTINATION bin LIBRARY DESTINATION lib)

@@ -106,7 +106,7 @@ static pthread_mutex_t gMutex = PTHREAD_MUTEX_INITIALIZER;
 //********************************************************************************//
 
 //******************************* INTERNAL FUNCTIONS *****************************//
-static rbusError_t rbuscoreError_to_rbusError(rtError e)
+static rbusError_t rbusCoreError_to_rbusError(rtError e)
 {
   rbusError_t err;
   switch (e)
@@ -2129,6 +2129,7 @@ static int _method_callback_handler(rbusHandle_t handle, rbusMessage request, rb
 
     if(result == RBUS_ERROR_ASYNC_RESPONSE)
     {
+        rbusObject_Release(outParams);
         return RBUSCORE_SUCCESS_ASYNC;
     }
     else
@@ -2638,7 +2639,7 @@ rbusError_t rbus_get(rbusHandle_t handle, char const* name, rbusValue_t* value)
     if((err = rbus_invokeRemoteMethod(name, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, name);
-        errorcode = rbuscoreError_to_rbusError(err);
+        errorcode = rbusCoreError_to_rbusError(err);
     }
     else
     {
@@ -2794,7 +2795,7 @@ rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParam
                     if((err = rbus_invokeRemoteMethod(destinations[i], METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, destinations[i]);
-                        errorcode = rbuscoreError_to_rbusError(err);
+                        errorcode = rbusCoreError_to_rbusError(err);
                     }
                     else
                     {
@@ -2946,7 +2947,7 @@ rbusError_t rbus_getExt(rbusHandle_t handle, int paramCount, char const** pParam
                     if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_GETPARAMETERVALUES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, firstParamName);
-                        errorcode = rbuscoreError_to_rbusError(err);
+                        errorcode = rbusCoreError_to_rbusError(err);
                         break;
                     }
                     else
@@ -3091,7 +3092,7 @@ rbusError_t rbus_set(rbusHandle_t handle, char const* name,rbusValue_t value, rb
     if((err = rbus_invokeRemoteMethod(name, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, name);
-        errorcode = rbuscoreError_to_rbusError(err);
+        errorcode = rbusCoreError_to_rbusError(err);
     }
     else
     {
@@ -3261,7 +3262,7 @@ rbusError_t rbus_setMulti(rbusHandle_t handle, int numProps, rbusProperty_t prop
                     if((err = rbus_invokeRemoteMethod(firstParamName, METHOD_SETPARAMETERVALUES, setRequest, rbusConfig_ReadSetTimeout(), &setResponse)) != RBUSCORE_SUCCESS)
                     {
                         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, firstParamName);
-                        errorcode = rbuscoreError_to_rbusError(err);
+                        errorcode = rbusCoreError_to_rbusError(err);
                     }
                     else
                     {
@@ -3503,7 +3504,7 @@ rbusError_t rbusTable_addRow(
         &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, tableName);
-        return rbuscoreError_to_rbusError(err);
+        return rbusCoreError_to_rbusError(err);
     }
     else
     {
@@ -3561,7 +3562,7 @@ rbusError_t rbusTable_removeRow(
         &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, rowName);
-        return rbuscoreError_to_rbusError(err);
+        return rbusCoreError_to_rbusError(err);
     }
     else
     {
@@ -3735,7 +3736,7 @@ rbusError_t rbusTable_getRowNames(
     else
     {
         RBUSLOG_ERROR("%s: getparamnames %s failed with buss err %d", __FUNCTION__, tableName, err);
-        errorcode = rbuscoreError_to_rbusError(err);
+        errorcode = rbusCoreError_to_rbusError(err);
     }
     return errorcode;
 }
@@ -3809,7 +3810,7 @@ rbusError_t rbusElementInfo_get(
         if((err = rbus_invokeRemoteMethod(destinations[d], METHOD_GETPARAMETERNAMES, request, rbusConfig_ReadGetTimeout(), &response)) != RBUSCORE_SUCCESS)
         {
             RBUSLOG_ERROR("%s rbus_invokeRemoteMethod %s destination=%s object=%s failed: err=%d", __FUNCTION__, METHOD_GETPARAMETERNAMES, destinations[d], elemName, err);
-            errorcode = rbuscoreError_to_rbusError(err);
+            errorcode = rbusCoreError_to_rbusError(err);
         }
         else
         {
@@ -4064,11 +4065,6 @@ rbusError_t  rbusEvent_Subscribe(
 
     errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL, 0, 0 , timeout, NULL);
 
-    if(errorcode != RBUS_ERROR_SUCCESS)
-    {
-        RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, eventName, errorcode);
-    }
-
     return errorcode;
 }
 
@@ -4090,11 +4086,6 @@ rbusError_t  rbusEvent_SubscribeAsync(
     RBUSLOG_DEBUG("%s: %s", __FUNCTION__, eventName);
 
     errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL, 0, 0, timeout, subscribeHandler);
-
-    if(errorcode != RBUS_ERROR_SUCCESS)
-    {
-        RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, eventName, errorcode);
-    }
 
     return errorcode;
 }
@@ -4168,7 +4159,7 @@ rbusError_t rbusEvent_SubscribeEx(
 
     for(i = 0; i < numSubscriptions; ++i)
     {
-        RBUSLOG_INFO("%s: %s", __FUNCTION__, subscription[i].eventName);
+        RBUSLOG_DEBUG ("%s: %s", __FUNCTION__, subscription[i].eventName);
 
         //FIXME/TODO -- since this is not using async path, this could block and thus block the rest of the subs to come
         //For rbusEvent_Subscribe, since it a single subscribe, blocking is fine but for rbusEvent_SubscribeEx,
@@ -4180,8 +4171,6 @@ rbusError_t rbusEvent_SubscribeEx(
 
         if(errorcode != RBUS_ERROR_SUCCESS)
         {
-            RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, subscription[i].eventName, errorcode);
-
             /*  Treat SubscribeEx like a transaction because
                 if any subs fails, how will the user know which ones succeeded and which failed ?
                 So, as a transaction, we just undo everything, which are all those from 0 to i-1.
@@ -4415,7 +4404,7 @@ rbusError_t  rbusEvent_Publish(
 
             rbusEventData_appendToMessage(eventData, subscription->filter, subscription->componentId, msg);
 
-            RBUSLOG_INFO("rbusEvent_Publish: publishing event %s to listener %s", subscription->eventName, subscription->listener);
+            RBUSLOG_DEBUG("rbusEvent_Publish: publishing event %s to listener %s", subscription->eventName, subscription->listener);
 
             err = rbus_publishSubscriberEvent(
                 handleInfo->componentName,  
@@ -4472,7 +4461,7 @@ rbusError_t rbusMethod_InvokeInternal(
         &response)) != RBUSCORE_SUCCESS)
     {
         RBUSLOG_ERROR("%s by %s failed; Received error %d from RBUS Daemon for the object %s", __FUNCTION__, handle->componentName, err, methodName);
-        return rbuscoreError_to_rbusError(err);
+        return rbusCoreError_to_rbusError(err);
     }
 
     rbusMessage_GetInt32(response, &returnCode);
@@ -4631,7 +4620,7 @@ rbusError_t rbus_createSession(rbusHandle_t handle, uint32_t *pSessionId)
         else
         {
             RBUSLOG_ERROR("Failed to communicated with session manager.");
-            rc = rbuscoreError_to_rbusError(err);
+            rc = rbusCoreError_to_rbusError(err);
         }
     }
     else
@@ -4669,7 +4658,7 @@ rbusError_t rbus_getCurrentSession(rbusHandle_t handle, uint32_t *pSessionId)
         else
         {
             RBUSLOG_ERROR("Failed to communicated with session manager.");
-            rc = rbuscoreError_to_rbusError(err);
+            rc = rbusCoreError_to_rbusError(err);
         }
     }
     else
@@ -4707,7 +4696,7 @@ rbusError_t rbus_closeSession(rbusHandle_t handle, uint32_t sessionId)
         else
         {
             RBUSLOG_ERROR("Failed to communicated with session manager.");
-            rc = rbuscoreError_to_rbusError(err);
+            rc = rbusCoreError_to_rbusError(err);
         }
     }
     else

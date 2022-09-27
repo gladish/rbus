@@ -770,7 +770,7 @@ rbusCoreError_t rbus_registerObj(const char * object_name, rbus_callback_t handl
         RBUSCORELOG_DEBUG("Registered object %s", object_name);
         if(sz >= MAX_REGISTERED_OBJECTS)
         {
-            RBUSCORELOG_WARN("Number of registered objects is %lu", sz);
+            RBUSCORELOG_WARN("Number of registered objects is %zu", sz);
         }
         return RBUSCORE_SUCCESS;
     }
@@ -1643,7 +1643,7 @@ rbusCoreError_t rbus_publishEvent(const char* object_name,  const char * event_n
             size_t nlistener, i;
 
             nlistener = rtVector_Size(evt->listeners);
-            RBUSCORELOG_DEBUG("Event %s exists in subscription table. Dispatching to %lu subscribers.", event_name, nlistener);
+            RBUSCORELOG_DEBUG("Event %s exists in subscription table. Dispatching to %zu subscribers.", event_name, nlistener);
             for(i=0; i < nlistener; ++i)
             {
                 char const* listener = (char const*)rtVector_At(evt->listeners, i);

@@ -26,7 +26,7 @@ Test Case : Testing rbus communications from client end
 #include <signal.h>
 #include <vector>
 extern "C" {
-#include "rbus_core.h"
+#include "rbuscore.h"
 
 }
 #include "gtest_app.h"
