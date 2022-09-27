@@ -34,6 +34,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define RBUS_OPEN_TELEMETRY_DATA_MAX 512
+
+void rbus_getOpenTelemetryContext(const char **s, const char **t);
+void rbus_setOpenTelemetryContext(const char *s, const char *t);
+void rbus_clearOpenTelemetryContext();
+
 typedef int (*rbus_callback_t)(const char * destination, const char * method, rbusMessage in, void * user_data, rbusMessage *out, const rtMessageHeader* hdr);
 typedef int (*rbus_async_callback_t)(rbusMessage message, void * user_data);
 typedef int (*rbus_event_callback_t)(const char * object_name,  const char * event_name, rbusMessage message, void * user_data);
