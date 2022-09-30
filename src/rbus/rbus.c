@@ -1555,9 +1555,16 @@ static rbusError_t _get_recursive_wildcard_handler (rbusHandle_t handle, char co
     }
     else if (instanceName[length] == '.')
     {
+        int hasInstance = 1;
         el = retrieveInstanceElement(handleInfo->elementRoot, instanceName);
-        _get_recursive_partialpath_handler(el, NULL, handle, pRequestingComp, properties, pCount, 0);
-
+        if(el)
+        {
+            if(strstr(el->fullName, "{i}"))
+                hasInstance = 0;
+            _get_recursive_partialpath_handler(el, hasInstance ? NULL : parameterName, handle, pRequestingComp, properties, pCount, 0);
+        }
+        else
+            result = RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
     }
     else
     {
