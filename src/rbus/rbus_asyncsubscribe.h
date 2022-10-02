@@ -27,9 +27,9 @@
 extern "C" {
 #endif
 
-void rbusAsyncSubscribe_AddSubscription(rbusEventSubscription_t* subscription, rbusMessage payload);
-void rbusAsyncSubscribe_RemoveSubscription(rbusEventSubscription_t* subscription);
-rbusEventSubscription_t* rbusAsyncSubscribe_GetSubscription(rbusHandle_t handle, char const* eventName, rbusFilter_t filter);
+void rbusAsyncSubscribe_AddSubscription(rbusEventSubscriptionEx_t* subscription, rbusMessage payload);
+void rbusAsyncSubscribe_RemoveSubscription(rbusEventSubscriptionEx_t* subscription);
+rbusEventSubscriptionEx_t* rbusAsyncSubscribe_GetSubscription(rbusHandle_t handle, char const* eventName, rbusFilter_t filter);
 void rbusAsyncSubscribe_CloseHandle(rbusHandle_t handle);
 
 #ifdef __cplusplus

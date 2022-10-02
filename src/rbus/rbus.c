@@ -106,6 +106,15 @@ static pthread_mutex_t gMutex = PTHREAD_MUTEX_INITIALIZER;
 //********************************************************************************//
 
 //******************************* INTERNAL FUNCTIONS *****************************//
+static void rbusEventSubscription_Upgrade(rbusEventSubscriptionEx_t* dest, rbusEventSubscription_t* src)
+{
+  // In order for this to work, rbusEventSubscriptionEx_t must be laid out exactly how
+  // rbusEventSubscription_t is and have new fields addeed at the end.
+  memcpy(dest, src, sizeof(rbusEventSubscription_t));
+  dest->size = sizeof(rbusEventSubscriptionEx_t);
+  dest->fetchFirst = false;
+}
+
 static rbusError_t rbusCoreError_to_rbusError(rtError e)
 {
   rbusError_t err;
@@ -213,7 +222,7 @@ static rbusError_t CCSPError_to_rbusError(rtError e)
 
 void rbusEventSubscription_free(void* p)
 {
-    rbusEventSubscription_t* sub = (rbusEventSubscription_t*)p;
+    rbusEventSubscriptionEx_t* sub = (rbusEventSubscriptionEx_t *) p;
     free((void*)sub->eventName);
     if(sub->filter)
     {
@@ -222,13 +231,13 @@ void rbusEventSubscription_free(void* p)
     free(sub);
 }
 
-static rbusEventSubscription_t* rbusEventSubscription_find(rtVector eventSubs, char const* eventName, rbusFilter_t filter)
+static rbusEventSubscriptionEx_t* rbusEventSubscription_find(rtVector eventSubs, char const* eventName, rbusFilter_t filter)
 {
     /*FIXME - convert to map */
     size_t i;
     for(i=0; i < rtVector_Size(eventSubs); ++i)
     {
-        rbusEventSubscription_t* sub = (rbusEventSubscription_t*)rtVector_At(eventSubs, i);
+        rbusEventSubscriptionEx_t* sub = (rbusEventSubscriptionEx_t*) rtVector_At(eventSubs, i);
         if(sub && !strcmp(sub->eventName, eventName) && !rbusFilter_Compare(sub->filter, filter))
             return sub;
     }
@@ -950,6 +959,7 @@ int subscribeHandlerImpl(
         rbusObject_SetValue(data, "value", currentValue);
 
         rbusEvent_t event;
+        event.name = eventName;
         event.data = data;
         event.type = RBUS_EVENT_VALUE_CHANGED;
 
@@ -1171,11 +1181,12 @@ static void _client_disconnect_callback_handler(const char * listener)
     UnlockMutex();
 }
 
-void _subscribe_async_callback_handler(rbusHandle_t handle, rbusEventSubscription_t* subscription, rbusError_t error)
+void _subscribe_async_callback_handler(rbusHandle_t handle, rbusEventSubscriptionEx_t* subscription, rbusError_t error)
 {
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
 
-    subscription->asyncHandler(subscription->handle, subscription, error);
+    // TODO: does this need to be rbusEventSubscriptionEx_t* ?
+    subscription->asyncHandler(subscription->handle, (rbusEventSubscription_t *) subscription, error);
 
     if(error == RBUS_ERROR_SUCCESS)
     {
@@ -1221,7 +1232,7 @@ static int _master_event_callback_handler(char const* sender, char const* eventN
     rbusEvent_t event = {0};
     rbusFilter_t filter = NULL;
     int32_t componentId = -1;
-    rbusEventSubscription_t* subscription = NULL;
+    rbusEventSubscriptionEx_t* subscription = NULL;
     struct _rbusHandle* handleInfo = NULL;
     UNUSED1(userData);
 
@@ -1243,7 +1254,9 @@ static int _master_event_callback_handler(char const* sender, char const* eventN
 
     if(subscription)
     {
-        ((rbusEventHandler_t)subscription->handler)(subscription->handle, &event, subscription);
+        rbusEventHandler_t eventHandler = (rbusEventHandler_t) subscription->handler;
+        // XXX: rbusEventSubscriptionEx_t must be down-castable to rbusEventSubscription_t
+        eventHandler(subscription->handle, &event, (rbusEventSubscription_t *) subscription);
     }
     else
     {
@@ -3948,7 +3961,7 @@ rbusError_t rbusElementInfo_free(
 
 //************************** Events ****************************//
 
-static rbusMessage rbusEvent_CreateSubscribePayload(rbusEventSubscription_t* sub, int32_t componentId)
+static rbusMessage rbusEvent_CreateSubscribePayload(rbusEventSubscriptionEx_t const* sub, int32_t componentId)
 {
     rbusMessage payload = NULL;
 
@@ -3974,26 +3987,18 @@ static rbusMessage rbusEvent_CreateSubscribePayload(rbusEventSubscription_t* sub
 
 static rbusError_t rbusEvent_SubscribeWithRetries(
     rbusHandle_t                    handle,
-    char const*                     eventName,
-    rbusEventHandler_t              handler,
-    void*                           userData,
-    rbusFilter_t                    filter,
-    int32_t                         interval,
-    uint32_t                        duration,    
-    int                             timeout,
-    rbusSubscribeAsyncRespHandler_t async,
-    bool                            fetchFirst)
+    rbusEventSubscriptionEx_t*      sub,
+    int                             timeout)
 {
     rbusCoreError_t coreerr;
     int providerError = RBUS_ERROR_SUCCESS;
-    rbusEventSubscription_t* sub;
     rbusMessage payload = NULL;
     int destNotFoundSleep = 1000; /*miliseconds*/
     int destNotFoundTimeout;
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
 
-    if( rbusEventSubscription_find(handleInfo->eventSubs, eventName, filter) ||
-        rbusAsyncSubscribe_GetSubscription(handle, eventName, filter))
+    if( rbusEventSubscription_find(handleInfo->eventSubs, sub->eventName, sub->filter) ||
+        rbusAsyncSubscribe_GetSubscription(handle, sub->eventName, sub->filter))
     {
         return RBUS_ERROR_SUBSCRIPTION_ALREADY_EXIST;
     }
@@ -4006,18 +4011,6 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
     {
         destNotFoundTimeout = timeout * 1000; /*convert seconds to milliseconds */
     }
-
-    sub = rt_malloc(sizeof(rbusEventSubscription_t));
-
-    sub->handle = handle;
-    sub->eventName = strdup(eventName);
-    sub->handler = handler;
-    sub->userData = userData;
-    sub->filter = filter;
-    sub->duration = duration;
-    sub->interval = interval;
-    sub->asyncHandler = async;
-    sub->fetchFirst = fetchFirst;
 
     // need to have callback ready since fetchFirst happens immediately
     rtVector_PushBack(handleInfo->eventSubs, sub);
@@ -4039,7 +4032,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
 
     for(;;)
     {
-        RBUSLOG_DEBUG("%s: %s subscribing", __FUNCTION__, eventName);
+        RBUSLOG_DEBUG("%s: %s subscribing", __FUNCTION__, sub->eventName);
 
         coreerr = rbus_subscribeToEventTimeout(NULL, sub->eventName, _event_callback_handler, payload, sub, &providerError, destNotFoundTimeout);
         
@@ -4050,7 +4043,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
             if(sleepTime > destNotFoundTimeout)
                 sleepTime = destNotFoundTimeout;
 
-            RBUSLOG_DEBUG("%s: %s no provider. retry in %d ms with %d left", __FUNCTION__, eventName, sleepTime, destNotFoundTimeout );
+            RBUSLOG_DEBUG("%s: %s no provider. retry in %d ms with %d left", __FUNCTION__, sub->eventName, sleepTime, destNotFoundTimeout );
 
             //TODO: do we need pthread_cond_timedwait ?  e.g. maybe another thread calls rbus_close and we need to shutdown
             sleep(sleepTime/1000);
@@ -4077,7 +4070,7 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
 
     if(coreerr == RBUSCORE_SUCCESS)
     {
-        RBUSLOG_INFO("%s: %s subscribe retries succeeded", __FUNCTION__, eventName);
+        RBUSLOG_INFO("%s: %s subscribe retries succeeded", __FUNCTION__, sub->eventName);
         return RBUS_ERROR_SUCCESS;
     }
     else
@@ -4086,19 +4079,19 @@ static rbusError_t rbusEvent_SubscribeWithRetries(
 
         if(coreerr == RBUSCORE_ERROR_DESTINATION_UNREACHABLE)
         {
-            RBUSLOG_DEBUG("%s: %s all subscribe retries failed because no provider could be found", __FUNCTION__, eventName);
-            RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_NO_PROVIDER_COMPONENT  %s", eventName);/*RDKB-33658-AC7*/
+            RBUSLOG_DEBUG("%s: %s all subscribe retries failed because no provider could be found", __FUNCTION__, sub->eventName);
+            RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_NO_PROVIDER_COMPONENT  %s", sub->eventName);/*RDKB-33658-AC7*/
             return RBUS_ERROR_TIMEOUT;
         }
         else if(providerError != RBUS_ERROR_SUCCESS)
         {   
-            RBUSLOG_DEBUG("%s: %s subscribe retries failed due provider error %d", __FUNCTION__, eventName, providerError);
-            RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_INVALID_INPUT  %s", eventName);/*RDKB-33658-AC9*/
+            RBUSLOG_DEBUG("%s: %s subscribe retries failed due provider error %d", __FUNCTION__, sub->eventName, providerError);
+            RBUSLOG_WARN("EVENT_SUBSCRIPTION_FAIL_INVALID_INPUT  %s", sub->eventName);/*RDKB-33658-AC9*/
             return providerError;
         }
         else
         {
-            RBUSLOG_WARN("%s: %s subscribe retries failed due to core error %d", __FUNCTION__, eventName, coreerr);
+            RBUSLOG_WARN("%s: %s subscribe retries failed due to core error %d", __FUNCTION__, sub->eventName, coreerr);
             return RBUS_ERROR_BUS_ERROR;
         }
     }
@@ -4111,18 +4104,23 @@ rbusError_t  rbusEvent_Subscribe(
     void*               userData,
     int                 timeout)
 {
-    rbusError_t errorcode;
-
     VERIFY_NULL(handle);
     VERIFY_NULL(eventName);
     VERIFY_NULL(handler);
 
-    RBUSLOG_DEBUG("%s: %s", __FUNCTION__, eventName);
+    rbusEventSubscriptionEx_t sub;
+    sub.size = sizeof(rbusEventSubscription_t);
+    sub.eventName = eventName;
+    sub.filter = NULL;
+    sub.interval = 0;
+    sub.duration = 0;
+    sub.handler = handler;
+    sub.userData = userData;
+    sub.handle = handle;
+    sub.asyncHandler = NULL;
+    sub.fetchFirst = false;
 
-    errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL,
-      0, 0 , timeout, NULL, false);
-
-    return errorcode;
+    return rbusEvent_SubscribeWithRetries(handle, &sub, timeout);
 }
 
 rbusError_t  rbusEvent_SubscribeAsync(
@@ -4133,19 +4131,24 @@ rbusError_t  rbusEvent_SubscribeAsync(
     void*                           userData,
     int                             timeout)
 {
-    rbusError_t errorcode;
-
     VERIFY_NULL(handle);
     VERIFY_NULL(eventName);
     VERIFY_NULL(handler);
     VERIFY_NULL(subscribeHandler);
 
-    RBUSLOG_DEBUG("%s: %s", __FUNCTION__, eventName);
+    rbusEventSubscriptionEx_t sub;
+    sub.size = sizeof(rbusEventSubscription_t);
+    sub.eventName = eventName;
+    sub.filter = NULL;
+    sub.interval = 0;
+    sub.duration = 0;
+    sub.handler = handler;
+    sub.userData = userData;
+    sub.handle = handle;
+    sub.asyncHandler = subscribeHandler;
+    sub.fetchFirst = false;
 
-    errorcode = rbusEvent_SubscribeWithRetries(handle, eventName, handler, userData, NULL,
-      0, 0, timeout, subscribeHandler, false);
-
-    return errorcode;
+    return rbusEvent_SubscribeWithRetries(handle, &sub, timeout);
 }
 
 rbusError_t rbusEvent_Unsubscribe(
@@ -4153,7 +4156,7 @@ rbusError_t rbusEvent_Unsubscribe(
     char const*         eventName)
 {
     struct _rbusHandle* handleInfo = (struct _rbusHandle*)handle;
-    rbusEventSubscription_t* sub;
+    rbusEventSubscriptionEx_t* sub;
 
     VERIFY_NULL(handle);
     VERIFY_NULL(eventName);
@@ -4202,6 +4205,34 @@ rbusError_t rbusEvent_Unsubscribe(
     }
 }
 
+rbusError_t rbusEvent_SubscribeEx2(
+    rbusHandle_t                rbus,
+    rbusEventSubscriptionEx_t*  subs,
+    int                         n,
+    int                         timeout)
+{
+    rbusError_t status = RBUS_ERROR_SUCCESS;
+
+    VERIFY_NULL(rbus);
+    VERIFY_NULL(subs);
+
+    int i;
+    for (i = 0; i < n; ++i)
+    {
+        status = rbusEvent_SubscribeWithRetries(rbus, &subs[i], timeout);
+        if (status != RBUS_ERROR_SUCCESS)
+        {
+            if (i > 0)
+                rbusEvent_UnsubscribeEx(rbus, (rbusEventSubscription_t *) &subs[i], i);
+            break;
+        }
+
+    }
+
+    return status;
+}
+
+
 rbusError_t rbusEvent_SubscribeEx(
     rbusHandle_t                handle,
     rbusEventSubscription_t*    subscription,
@@ -4215,6 +4246,7 @@ rbusError_t rbusEvent_SubscribeEx(
     VERIFY_NULL(subscription);
     VERIFY_ZERO(numSubscriptions); 
 
+
     for(i = 0; i < numSubscriptions; ++i)
     {
         RBUSLOG_DEBUG ("%s: %s", __FUNCTION__, subscription[i].eventName);
@@ -4223,18 +4255,10 @@ rbusError_t rbusEvent_SubscribeEx(
         //For rbusEvent_Subscribe, since it a single subscribe, blocking is fine but for rbusEvent_SubscribeEx,
         //where we can have multiple, we need to actually run all these in parallel.  So we might need to leverage
         //the asyncsubscribe api to handle this.
-        errorcode = rbusEvent_SubscribeWithRetries(
-            handle,
-            subscription[i].eventName,
-            subscription[i].handler,
-            subscription[i].userData,
-            subscription[i].filter,
-            subscription[i].interval,
-            subscription[i].duration,
-            timeout,
-            NULL,
-            subscription[i].fetchFirst);
+        rbusEventSubscriptionEx_t sub;
+        rbusEventSubscription_Upgrade(&sub, &subscription[i]);
 
+        errorcode = rbusEvent_SubscribeWithRetries(handle,  &sub, timeout);
         if(errorcode != RBUS_ERROR_SUCCESS)
         {
             /*  Treat SubscribeEx like a transaction because
@@ -4242,7 +4266,7 @@ rbusError_t rbusEvent_SubscribeEx(
                 So, as a transaction, we just undo everything, which are all those from 0 to i-1.
             */
             if(i > 0)
-                rbusEvent_UnsubscribeEx(handle, subscription, i);
+                rbusEvent_UnsubscribeEx(handle, (rbusEventSubscription_t *) &sub, i);
             break;
         }
     }
@@ -4269,17 +4293,18 @@ rbusError_t rbusEvent_SubscribeExAsync(
     {
         RBUSLOG_INFO("%s: %s", __FUNCTION__, subscription[i].eventName);
 
-        errorcode = rbusEvent_SubscribeWithRetries(
-            handle,
-            subscription[i].eventName,
-            subscription[i].handler,
-            subscription[i].userData,
-            subscription[i].filter,
-            subscription[i].interval,
-            subscription[i].duration,
-            timeout, subscribeHandler,
-            subscription[i].fetchFirst);
+        rbusEventSubscriptionEx_t sub;
+        sub.eventName = subscription[i].eventName;
+        sub.filter = subscription[i].filter;
+        sub.interval = subscription[i].interval;
+        sub.duration = subscription[i].duration;
+        sub.handler = subscription[i].handler;
+        sub.userData = subscription[i].userData;
+        sub.handle = subscription[i].handle;
+        sub.asyncHandler = subscription[i].asyncHandler;
+        sub.fetchFirst = false;
 
+        errorcode = rbusEvent_SubscribeWithRetries(handle, &sub, timeout);
         if(errorcode != RBUS_ERROR_SUCCESS)
         {
             RBUSLOG_WARN("%s: %s failed err=%d", __FUNCTION__, subscription[i].eventName, errorcode);
@@ -4297,9 +4322,9 @@ rbusError_t rbusEvent_SubscribeExAsync(
     return errorcode;    
 }
 
-rbusError_t rbusEvent_UnsubscribeEx(
+static rbusError_t _rbusEvent_DoUnsubscribe(
     rbusHandle_t                handle,
-    rbusEventSubscription_t*    subscription,
+    rbusEventSubscriptionEx_t*  subscription,
     int                         numSubscriptions)
 {
     rbusError_t errorcode = RBUS_ERROR_SUCCESS;
@@ -4320,7 +4345,7 @@ rbusError_t rbusEvent_UnsubscribeEx(
 
     for(i = 0; i < numSubscriptions; ++i)
     {
-        rbusEventSubscription_t* sub;
+        rbusEventSubscriptionEx_t* sub;
 
         RBUSLOG_INFO("%s: %s", __FUNCTION__, subscription[i].eventName);
 
@@ -4360,7 +4385,7 @@ rbusError_t rbusEvent_UnsubscribeEx(
         }
         else
         {
-            rbusEventSubscription_t* sub = rbusAsyncSubscribe_GetSubscription(handle, subscription[i].eventName, subscription[i].filter);
+            rbusEventSubscriptionEx_t* sub = rbusAsyncSubscribe_GetSubscription(handle, subscription[i].eventName, subscription[i].filter);
             if(sub)
             {
                 RBUSLOG_INFO("%s: %s removed pending async subscription", __FUNCTION__, sub->eventName);
@@ -4375,6 +4400,37 @@ rbusError_t rbusEvent_UnsubscribeEx(
     }
 
     return errorcode;
+}
+
+rbusError_t rbusEvent_UnsubscribeEx2(
+    rbusHandle_t rbus,
+    rbusEventSubscriptionEx_t* subs,
+    int n)
+{
+    VERIFY_NULL(rbus);
+    VERIFY_NULL(subs);
+
+    return _rbusEvent_DoUnsubscribe(rbus, subs, n);
+}
+
+rbusError_t rbusEvent_UnsubscribeEx(
+    rbusHandle_t                rbus,
+    rbusEventSubscription_t*    subs,
+    int                         n)
+{
+    VERIFY_NULL(rbus);
+    VERIFY_NULL(subs);
+
+    int i;
+    rbusEventSubscriptionEx_t* ex_subs = malloc(sizeof(rbusEventSubscriptionEx_t) * n);
+
+    for (i = 0; i < n; ++i)
+        rbusEventSubscription_Upgrade(&ex_subs[i], &subs[i]);
+
+    rbusError_t err =_rbusEvent_DoUnsubscribe(rbus, ex_subs, n);
+    free(ex_subs);
+
+    return err;
 }
 
 rbusError_t  rbusEvent_Publish(

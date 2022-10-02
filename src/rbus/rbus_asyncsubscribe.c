@@ -23,7 +23,7 @@
 #define UNLOCK() ERROR_CHECK(pthread_mutex_unlock(&gRetrier->mutexQueue))
 
 /*defined in rbus.c*/
-void _subscribe_async_callback_handler(rbusHandle_t handle, rbusEventSubscription_t* subscription, rbusError_t error);
+void _subscribe_async_callback_handler(rbusHandle_t handle, rbusEventSubscriptionEx_t* subscription, rbusError_t error);
 int _event_callback_handler(char const* objectName, char const* eventName, rbusMessage message, void* userData);
 void rbusEventSubscription_free(void* p);
 
@@ -38,7 +38,7 @@ typedef struct AsyncSubscribeRetrier_t
 
 typedef struct AsyncSubscription_t
 {
-    rbusEventSubscription_t* subscription;
+    rbusEventSubscriptionEx_t* subscription;
     rbusMessage payload;
     int nextWaitTime;
     rtTime_t startTime;
@@ -72,7 +72,7 @@ static int rbusAsyncSubscribeRetrier_CompareHandle(const void *pitem, const void
 static int rbusAsyncSubscribeRetrier_CompareSubscription(const void *pitem, const void *psub)
 {
     AsyncSubscription_t* item = (AsyncSubscription_t*)pitem;
-    rbusEventSubscription_t* sub = (rbusEventSubscription_t*)psub;
+    rbusEventSubscriptionEx_t* sub = (rbusEventSubscriptionEx_t *) psub;
     if((!item)||(!sub))
         return 1;
 
@@ -337,7 +337,7 @@ static void rbusAsyncSubscribeRetrier_Destroy()
     RBUSLOG_INFO("%s exit", __FUNCTION__);
 }
 
-void rbusAsyncSubscribe_AddSubscription(rbusEventSubscription_t* subscription, rbusMessage payload)
+void rbusAsyncSubscribe_AddSubscription(rbusEventSubscriptionEx_t* subscription, rbusMessage payload)
 {
     int rc;
     char tbuff[50];
@@ -370,7 +370,7 @@ void rbusAsyncSubscribe_AddSubscription(rbusEventSubscription_t* subscription, r
     (void)rc;
 }
 
-void rbusAsyncSubscribe_RemoveSubscription(rbusEventSubscription_t* subscription)
+void rbusAsyncSubscribe_RemoveSubscription(rbusEventSubscriptionEx_t* subscription)
 {
     if(!gRetrier)
         return;
@@ -381,9 +381,11 @@ void rbusAsyncSubscribe_RemoveSubscription(rbusEventSubscription_t* subscription
     UNLOCK();
 }
 
-rbusEventSubscription_t* rbusAsyncSubscribe_GetSubscription(rbusHandle_t handle, char const* eventName, rbusFilter_t filter)
+rbusEventSubscriptionEx_t* rbusAsyncSubscribe_GetSubscription(rbusHandle_t handle, char const* eventName, rbusFilter_t filter)
 {
-    rbusEventSubscription_t sub = {0};
+    rbusEventSubscriptionEx_t sub;
+    memset(&sub, 0, sizeof(sub));
+
     if(!gRetrier)
         return NULL;
     sub.handle = handle;

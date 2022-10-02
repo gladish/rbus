@@ -284,17 +284,17 @@ typedef void (*rbusEventHandler_t)(
 typedef struct _rbusEventSubscription
 {
     char const*         eventName;  /** Fully qualified event name */
-    rbusFilter_t        filter;     /** Optional filter that the client would like 
+    rbusFilter_t        filter;     /** Optional filter that the client would like
                                         the sender to apply before sending the event
                                       */
     int32_t             interval;   /**< Total interval period after which
                                          the event needs to be fired. Should
                                          be in multiples of minInterval
                                       */
-    uint32_t            duration;   /** Optional maximum duration in seconds until which 
-                                        the subscription should be in effect. Beyond this 
-                                        duration, the event would be unsubscribed automatically. 
-                                        Pass "0" for indefinite event subscription which requires 
+    uint32_t            duration;   /** Optional maximum duration in seconds until which
+                                        the subscription should be in effect. Beyond this
+                                        duration, the event would be unsubscribed automatically.
+                                        Pass "0" for indefinite event subscription which requires
                                         the rbusEvent_Unsubscribe API to be called explicitly.
                                       */
     void*               handler;    /** fixme rbusEventHandler_t internal*/
@@ -303,6 +303,31 @@ typedef struct _rbusEventSubscription
     rbusSubscribeAsyncRespHandler_t asyncHandler;/** Private use only: The async handler being used for any background subscription retries */
     bool                fetchFirst;
 } rbusEventSubscription_t;
+
+/// @brief rbusEventSubscriptionEx_t
+typedef struct _rbusEventSubscriptionEx
+{
+    char const*         eventName;  /** Fully qualified event name */
+    rbusFilter_t        filter;     /** Optional filter that the client would like
+                                        the sender to apply before sending the event
+                                      */
+    int32_t             interval;   /**< Total interval period after which
+                                         the event needs to be fired. Should
+                                         be in multiples of minInterval
+                                      */
+    uint32_t            duration;   /** Optional maximum duration in seconds until which
+                                        the subscription should be in effect. Beyond this
+                                        duration, the event would be unsubscribed automatically.
+                                        Pass "0" for indefinite event subscription which requires
+                                        the rbusEvent_Unsubscribe API to be called explicitly.
+                                      */
+    void*               handler;    /** fixme rbusEventHandler_t internal*/
+    void*               userData;   /** The userData set when subscribing to the event. */
+    rbusHandle_t        handle;     /** Private use only: The rbus handle associated with this subscription */
+    rbusSubscribeAsyncRespHandler_t asyncHandler;/** Private use only: The async handler being used for any background subscription retries */
+    size_t                  size;
+    bool                    fetchFirst;
+} rbusEventSubscriptionEx_t;
 
 /** @} */
 
@@ -1455,6 +1480,13 @@ rbusError_t rbusEvent_SubscribeEx(
     int                       numSubscriptions,
     int                       timeout);
 
+
+rbusError_t rbusEvent_SubscribeEx2(
+    rbusHandle_t                rbus,
+    rbusEventSubscriptionEx_t*  subs,
+    int                         n,
+    int                         timeout);
+
 /** @fn rbusError_t  rbusEvent_SubscribeExAsync (
  *          rbusHandle_t handle,
  *          rbusEventSubscription_t* subscription,
@@ -1512,6 +1544,11 @@ rbusError_t rbusEvent_UnsubscribeEx(
     rbusHandle_t handle,
     rbusEventSubscription_t* subscriptions,
     int numSubscriptions);
+
+rbusError_t rbusEvent_UnsubscribeEx2(
+    rbusHandle_t rbus,
+    rbusEventSubscriptionEx_t* subs,
+    int n);
 
 /** @} */
 

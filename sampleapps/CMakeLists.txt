@@ -47,9 +47,17 @@ add_executable(rbusEventProvider provider/rbusEventProvider.c)
 add_dependencies(rbusEventProvider rbus)
 target_link_libraries(rbusEventProvider rbus)
 
+add_executable(rbusEventProviderSimple provider/rbusEventProviderSimple.c)
+add_dependencies(rbusEventProviderSimple rbus)
+target_link_libraries(rbusEventProviderSimple rbus)
+
 add_executable(rbusEventConsumer consumer/rbusEventConsumer.c)
 add_dependencies(rbusEventConsumer rbus)
 target_link_libraries(rbusEventConsumer rbus)
+
+add_executable(rbusEventConsumerSimple consumer/rbusEventConsumerSimple.c)
+add_dependencies(rbusEventConsumerSimple rbus)
+target_link_libraries(rbusEventConsumerSimple rbus)
 
 add_executable(rbusGeneralEventProvider provider/rbusGeneralEventProvider.c)
 add_dependencies(rbusGeneralEventProvider rbus)
