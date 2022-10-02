@@ -1430,7 +1430,6 @@ static void master_event_callback(rtMessageHeader const* hdr, uint8_t const* dat
     for(i = 0; i < subs_len; ++i)
     {
         client_subscription_t sub = rtVector_At(g_event_subscriptions_for_client, i);
-
         if( strncmp(sub->object, sender, MAX_OBJECT_NAME_LENGTH) == 0 ||
             strncmp(sub->object, event_name, MAX_OBJECT_NAME_LENGTH) == 0 ) /* support rbus events being elements : the object name will be the event name */
         {
@@ -1740,7 +1739,8 @@ rbusCoreError_t rbus_unregisterClientDisconnectHandler()
     return RBUSCORE_SUCCESS;
 }
 
-rbusCoreError_t rbus_publishSubscriberEvent(const char* object_name,  const char * event_name, const char* listener, rbusMessage out)
+rbusCoreError_t rbus_publishSubscriberEvent(const char* object_name,  const char * event_name,
+  const char* listener, rbusMessage out, bool fetchFirst)
 {
     /*using namespace rbus_server;*/
     rbusCoreError_t ret = RBUSCORE_SUCCESS;
@@ -1757,13 +1757,20 @@ rbusCoreError_t rbus_publishSubscriberEvent(const char* object_name,  const char
     rbusMessage_SetInt32(out, 1);/*is rbus 2.0*/ 
     rbusMessage_EndMetaSectionWrite(out);
     lock();
-    server_object_t obj = get_object(object_name);
-    if(NULL == obj)
+
+    // XXX: I don't know why this is here. But during a firstFetch scenario, the
+    // server_object is NULL preventing us from sending the current value
+    if (!fetchFirst)
     {
+      server_object_t obj = get_object(object_name);
+      if(NULL == obj)
+      {
         /*Object not present yet. Register it now.*/
         RBUSCORELOG_ERROR("Could not find object %s", object_name);
         ret = RBUSCORE_ERROR_INVALID_PARAM;
+      }
     }
+
     if(rbus_sendMessage(out, listener, object_name) != RBUSCORE_SUCCESS)
     {
        RBUSCORELOG_ERROR("Couldn't send event %s::%s to %s.", object_name, event_name, listener);
